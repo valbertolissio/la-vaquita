@@ -69,6 +69,8 @@ export function TasksScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
+      {tasks && tasks.length > 0 && <Text style={styles.hint}>Tocá una tarea para editarla, o el ícono de tacho para eliminarla.</Text>}
+
       {toast && (
         <View style={styles.toast}>
           <Text style={styles.toastText}>{toast}</Text>
@@ -128,6 +130,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: "700", color: colors.text },
   addButton: { flexDirection: "row", alignItems: "center", backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   addButtonText: { color: "white", fontWeight: "600", fontSize: 12 },
+  hint: { fontSize: 11, color: colors.muted, paddingHorizontal: 16, marginBottom: 4 },
   toast: { marginHorizontal: 16, marginBottom: 8, backgroundColor: "#e8f7ee", borderRadius: 10, padding: 12 },
   toastText: { color: colors.greenDark, fontWeight: "600", fontSize: 13 },
   card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "white", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border },
