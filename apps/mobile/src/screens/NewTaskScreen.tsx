@@ -5,6 +5,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { colors } from "../lib/theme";
+import { Feather } from "@expo/vector-icons";
 import { Task } from "../lib/types";
 import { displayName } from "../lib/format";
 
@@ -72,7 +73,12 @@ export function NewTaskScreen({ navigation, route }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{isEditing ? "Editar tarea" : "Tarea nueva"}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{isEditing ? "Editar tarea" : "Tarea nueva"}</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+            <Feather name="x" size={22} color={colors.text} />
+          </TouchableOpacity>
+        </View>
 
         <View>
           <Text style={styles.label}>Título</Text>
@@ -199,6 +205,7 @@ export function NewTaskScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, gap: 14 },
+  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: { fontSize: 18, fontWeight: "700", color: colors.text },
   row: { flexDirection: "row", gap: 10 },
   label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },

@@ -112,6 +112,9 @@ export function TasksScreen({ navigation }: any) {
               </View>
             </TouchableOpacity>
             {item.dueDate && <Text style={styles.dueDate}>{formatDate(item.dueDate)}</Text>}
+            <TouchableOpacity onPress={() => confirmDelete(item)} hitSlop={8} style={styles.deleteButton}>
+              <Feather name="trash-2" size={16} color={colors.danger} />
+            </TouchableOpacity>
           </View>
         )}
       />
@@ -139,5 +142,6 @@ const styles = StyleSheet.create({
   timerBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#fffbeb", borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2 },
   timerText: { fontSize: 10, color: "#b45309", fontWeight: "600" },
   dueDate: { fontSize: 12, color: colors.muted },
+  deleteButton: { padding: 4 },
   empty: { textAlign: "center", color: colors.muted, marginTop: 40 },
 });
