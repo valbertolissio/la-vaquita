@@ -42,10 +42,10 @@ export function TripLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f5f3ee]">
+    <div className="flex h-screen overflow-hidden bg-[#f5f3ee]">
       <Sidebar />
-      <div className="flex-1">
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-4">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-8 py-4">
           <div>
             <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900">
               {trip?.name ?? "Cargando..."}
@@ -135,7 +135,7 @@ export function TripLayout() {
             </button>
           </div>
         </header>
-        <main className="p-8">
+        <main className="flex-1 overflow-y-auto p-8">
           <Outlet context={{ trip }} />
         </main>
       </div>

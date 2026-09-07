@@ -16,7 +16,7 @@ export function Sidebar() {
   const navigate = useNavigate();
 
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col bg-navy-900 text-white">
+    <aside className="flex h-full w-64 shrink-0 flex-col overflow-y-auto bg-navy-900 text-white">
       <div className="flex items-center gap-2 px-6 py-6">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white">
           <Logo size={24} />
