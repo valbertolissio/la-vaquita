@@ -8,3 +8,4 @@ build/
 apps/mobile/.expo/
 apps/api/generated/
 coverage/
+*.tsbuildinfo
