@@ -33,23 +33,38 @@ export function initials(name: string) {
     .toUpperCase();
 }
 
-const AVATAR_COLORS = [
-  { bg: "bg-vaquita-green", text: "text-white" },
-  { bg: "bg-navy-900", text: "text-white" },
-  { bg: "bg-blue-500", text: "text-white" },
-  { bg: "bg-orange-500", text: "text-white" },
-  { bg: "bg-purple-500", text: "text-white" },
-  { bg: "bg-rose-500", text: "text-white" },
-  { bg: "bg-teal-500", text: "text-white" },
-  { bg: "bg-amber-500", text: "text-white" },
-];
+export const AVATAR_COLOR_KEYS = ["green", "navy", "blue", "orange", "purple", "rose", "teal", "amber"] as const;
+export type AvatarColorKey = (typeof AVATAR_COLOR_KEYS)[number];
 
-/** Color de avatar estable por usuario, para diferenciar participantes de un vistazo. */
-export function avatarColor(userId: string) {
+const AVATAR_COLORS: Record<AvatarColorKey, { bg: string; text: string }> = {
+  green: { bg: "bg-vaquita-green", text: "text-white" },
+  navy: { bg: "bg-navy-900", text: "text-white" },
+  blue: { bg: "bg-blue-500", text: "text-white" },
+  orange: { bg: "bg-orange-500", text: "text-white" },
+  purple: { bg: "bg-purple-500", text: "text-white" },
+  rose: { bg: "bg-rose-500", text: "text-white" },
+  teal: { bg: "bg-teal-500", text: "text-white" },
+  amber: { bg: "bg-amber-500", text: "text-white" },
+};
+
+/**
+ * Color de avatar por usuario. Si el usuario eligió un color propio (override,
+ * uno de AVATAR_COLOR_KEYS) se usa ese; si no, se deriva un color estable a
+ * partir del hash de su id, para diferenciar participantes de un vistazo.
+ */
+export function avatarColor(userId: string, override?: string | null) {
+  if (override && (AVATAR_COLOR_KEYS as readonly string[]).includes(override)) {
+    return AVATAR_COLORS[override as AvatarColorKey];
+  }
   let hash = 0;
   for (let i = 0; i < userId.length; i++) {
     hash = (hash << 5) - hash + userId.charCodeAt(i);
     hash |= 0;
   }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  return AVATAR_COLORS[AVATAR_COLOR_KEYS[Math.abs(hash) % AVATAR_COLOR_KEYS.length]];
+}
+
+/** Nombre a mostrar: el sobrenombre elegido por el usuario, o su nombre real. */
+export function displayName(user: { name: string; nickname?: string | null }) {
+  return user.nickname?.trim() ? user.nickname : user.name;
 }

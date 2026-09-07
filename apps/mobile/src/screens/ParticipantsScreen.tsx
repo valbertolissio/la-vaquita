@@ -7,7 +7,7 @@ import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { Trip, TripSummary, Settlement } from "../lib/types";
 import { colors } from "../lib/theme";
-import { money } from "../lib/format";
+import { displayName, money } from "../lib/format";
 import { Avatar } from "../components/Avatar";
 
 export function ParticipantsScreen({ navigation }: any) {
@@ -41,9 +41,9 @@ export function ParticipantsScreen({ navigation }: any) {
             const balance = summary?.balances.find((b) => b.userId === m.userId);
             return (
               <View key={m.id} style={styles.row}>
-                <Avatar userId={m.userId} name={m.user.name} size={36} />
+                <Avatar userId={m.userId} name={displayName(m.user)} color={m.user.avatarColor} size={36} />
                 <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.name}>{m.user.name}</Text>
+                  <Text style={styles.name}>{displayName(m.user)}</Text>
                   <Text style={styles.role}>{m.role === "ORGANIZER" ? "Organizador/a" : "Integrante"}</Text>
                 </View>
                 {balance && (

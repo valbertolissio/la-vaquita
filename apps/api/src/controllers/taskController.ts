@@ -155,7 +155,7 @@ export async function completeTask(req: AuthedRequest, res: Response) {
     });
     rotated = true;
     const nextUser = await prisma.user.findUnique({ where: { id: order[nextCursor] }, select: safeUserSelect });
-    if (nextUser) nextAssignee = { id: nextUser.id, name: nextUser.name };
+    if (nextUser) nextAssignee = { id: nextUser.id, name: nextUser.nickname || nextUser.name };
   } else {
     await prisma.task.update({ where: { id: task.id }, data: { status: "DONE" } });
   }

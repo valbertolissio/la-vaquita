@@ -100,11 +100,12 @@ export async function getTripSummary(req: AuthedRequest, res: Response) {
     }),
   ]);
 
-  const timeByUser = new Map<string, { userId: string; name: string; totalSeconds: number; taskCount: number }>();
+  const timeByUser = new Map<string, { userId: string; name: string; avatarColor: string | null; totalSeconds: number; taskCount: number }>();
   for (const c of timeCompletions) {
     const entry = timeByUser.get(c.completedById) ?? {
       userId: c.completedById,
-      name: c.completedBy.name,
+      name: c.completedBy.nickname || c.completedBy.name,
+      avatarColor: c.completedBy.avatarColor,
       totalSeconds: 0,
       taskCount: 0,
     };

@@ -18,6 +18,8 @@ import { NewExpenseScreen } from "./src/screens/NewExpenseScreen";
 import { NewTaskScreen } from "./src/screens/NewTaskScreen";
 import { InviteScreen } from "./src/screens/InviteScreen";
 import { EditTripScreen } from "./src/screens/EditTripScreen";
+import { BalanceDetailScreen } from "./src/screens/BalanceDetailScreen";
+import { EditProfileScreen } from "./src/screens/EditProfileScreen";
 import { colors } from "./src/lib/theme";
 
 const Tab = createBottomTabNavigator();
@@ -64,16 +66,34 @@ function RootNavigator() {
           </>
         ) : !trip ? (
           <>
-            <Stack.Screen name="Viajes" component={TripsListScreen} />
-            <Stack.Screen name="Nuevo viaje" component={NewTripScreen} options={{ headerShown: true, presentation: "modal" }} />
+            <Stack.Screen name="Proyectos" component={TripsListScreen} />
+            <Stack.Screen name="Nuevo proyecto" component={NewTripScreen} options={{ headerShown: true, presentation: "modal" }} />
           </>
         ) : (
           <>
             <Stack.Screen name="Tabs" component={TripTabs} />
-            <Stack.Screen name="Gasto nuevo" component={NewExpenseScreen} options={{ headerShown: true, presentation: "modal" }} />
-            <Stack.Screen name="Tarea nueva" component={NewTaskScreen} options={{ headerShown: true, presentation: "modal" }} />
+            <Stack.Screen
+              name="Gasto nuevo"
+              component={NewExpenseScreen}
+              options={({ route }: any) => ({
+                headerShown: true,
+                presentation: "modal",
+                title: route.params?.expense ? "Editar gasto" : "Gasto nuevo",
+              })}
+            />
+            <Stack.Screen
+              name="Tarea nueva"
+              component={NewTaskScreen}
+              options={({ route }: any) => ({
+                headerShown: true,
+                presentation: "modal",
+                title: route.params?.task ? "Editar tarea" : "Tarea nueva",
+              })}
+            />
             <Stack.Screen name="Invitar" component={InviteScreen} options={{ headerShown: true, presentation: "modal" }} />
-            <Stack.Screen name="Editar viaje" component={EditTripScreen} options={{ headerShown: true, presentation: "modal" }} />
+            <Stack.Screen name="Editar proyecto" component={EditTripScreen} options={{ headerShown: true, presentation: "modal" }} />
+            <Stack.Screen name="Detalle de saldo" component={BalanceDetailScreen} options={{ headerShown: false, presentation: "modal" }} />
+            <Stack.Screen name="Mi perfil" component={EditProfileScreen} options={{ headerShown: false, presentation: "modal" }} />
           </>
         )}
       </Stack.Navigator>

@@ -8,6 +8,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateProfile: (data: { name?: string; nickname?: string | null; avatarColor?: string | null }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -41,8 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  async function updateProfile(data: { name?: string; nickname?: string | null; avatarColor?: string | null }) {
+    const updated = await api.updateMe(data);
+    setUser((prev) => (prev ? { ...prev, ...updated } : prev));
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

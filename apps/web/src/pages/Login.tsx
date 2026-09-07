@@ -33,7 +33,6 @@ export function Login() {
         <div className="mb-6 flex flex-col items-center text-center">
           <Logo size={44} />
           <h1 className="mt-2 font-display text-xl font-bold text-slate-900">La Vaquita</h1>
-          <p className="text-sm text-slate-500">Menos cuentas. Más viaje.</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-3">
           <input

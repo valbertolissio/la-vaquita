@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { Logo } from "../components/Logo";
+import { displayName } from "../lib/format";
 
 export function TripsList() {
   const { user, logout } = useAuth();
@@ -31,8 +32,8 @@ export function TripsList() {
           <div className="flex items-center gap-3">
             <Logo size={36} />
             <div>
-              <h1 className="font-display text-2xl font-bold text-slate-900">Tus viajes</h1>
-              <p className="text-sm text-slate-500">Hola, {user?.name}</p>
+              <h1 className="font-display text-2xl font-bold text-slate-900">Tus proyectos</h1>
+              <p className="text-sm text-slate-500">Hola, {user ? displayName(user) : ""}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -40,7 +41,7 @@ export function TripsList() {
               onClick={() => setShowForm((s) => !s)}
               className="flex items-center gap-1.5 rounded-lg bg-vaquita-green px-4 py-2 text-sm font-semibold text-white hover:bg-vaquita-greenDark"
             >
-              <Plus size={16} strokeWidth={2.5} /> Nuevo viaje
+              <Plus size={16} strokeWidth={2.5} /> Nuevo proyecto
             </button>
             <button onClick={logout} className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
               Cerrar sesión
@@ -53,7 +54,7 @@ export function TripsList() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nombre del viaje (ej: Bariloche 2025)"
+              placeholder="Nombre del proyecto (ej: Bariloche 2025)"
               required
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             />
@@ -74,13 +75,13 @@ export function TripsList() {
               />
             </div>
             <button type="submit" className="rounded-lg bg-vaquita-green px-4 py-2 text-sm font-semibold text-white hover:bg-vaquita-greenDark">
-              Crear viaje
+              Crear proyecto
             </button>
           </form>
         )}
 
         <div className="grid grid-cols-2 gap-4">
-          {trips === null && <p className="text-sm text-slate-400">Cargando tus viajes...</p>}
+          {trips === null && <p className="text-sm text-slate-400">Cargando tus proyectos...</p>}
           {trips?.map((t) => (
             <button
               key={t.id}
@@ -95,7 +96,7 @@ export function TripsList() {
             </button>
           ))}
           {trips?.length === 0 && !showForm && (
-            <p className="text-sm text-slate-400">Todavía no creaste ningún viaje. ¡Arrancá con "+ Nuevo viaje"!</p>
+            <p className="text-sm text-slate-400">Todavía no creaste ningún proyecto. ¡Arrancá con "+ Nuevo proyecto"!</p>
           )}
         </div>
       </div>

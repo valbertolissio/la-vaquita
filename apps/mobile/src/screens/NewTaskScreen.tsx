@@ -6,6 +6,7 @@ import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { colors } from "../lib/theme";
 import { Task } from "../lib/types";
+import { displayName } from "../lib/format";
 
 function formatShort(d: Date) {
   return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(d);
@@ -161,7 +162,7 @@ export function NewTaskScreen({ navigation, route }: any) {
                   style={[styles.chip, assignedToId === m.userId && styles.chipActive]}
                   onPress={() => setAssignedToId(m.userId)}
                 >
-                  <Text style={[styles.chipText, assignedToId === m.userId && styles.chipTextActive]}>{m.user.name}</Text>
+                  <Text style={[styles.chipText, assignedToId === m.userId && styles.chipTextActive]}>{displayName(m.user)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -177,7 +178,7 @@ export function NewTaskScreen({ navigation, route }: any) {
                   onPress={() => toggleRotationMember(m.userId)}
                 >
                   <Text style={[styles.chipText, rotationMembers.includes(m.userId) && styles.chipTextActive]}>
-                    {m.user.name}
+                    {displayName(m.user)}
                   </Text>
                 </TouchableOpacity>
               ))}

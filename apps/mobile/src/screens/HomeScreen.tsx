@@ -8,7 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
 import { TripSummary } from "../lib/types";
 import { colors } from "../lib/theme";
-import { money, formatDate, formatDuration } from "../lib/format";
+import { money, formatDate, formatDuration, displayName } from "../lib/format";
 import { Avatar } from "../components/Avatar";
 
 export function HomeScreen({ navigation }: any) {
@@ -29,14 +29,17 @@ export function HomeScreen({ navigation }: any) {
 
   function showOptions() {
     if (!trip) return;
-    const options: any[] = [{ text: "Cambiar de viaje", onPress: () => setTrip(null) }];
+    const options: any[] = [
+      { text: "Mi perfil", onPress: () => navigation.navigate("Mi perfil") },
+      { text: "Cambiar de proyecto", onPress: () => setTrip(null) },
+    ];
     if (isOrganizer) {
-      options.push({ text: "Editar viaje", onPress: () => navigation.navigate("Editar viaje") });
+      options.push({ text: "Editar proyecto", onPress: () => navigation.navigate("Editar proyecto") });
       options.push({
-        text: "Eliminar viaje",
+        text: "Eliminar proyecto",
         style: "destructive",
         onPress: () => {
-          Alert.alert("Eliminar viaje", `¿Seguro que querés eliminar "${trip!.name}"? Esta acción no se puede deshacer.`, [
+          Alert.alert("Eliminar proyecto", `¿Seguro que querés eliminar "${trip!.name}"? Esta acción no se puede deshacer.`, [
             { text: "Cancelar", style: "cancel" },
             {
               text: "Eliminar",
@@ -70,6 +73,37 @@ export function HomeScreen({ navigation }: any) {
           </Text>
           <Text style={styles.bannerSub}>{trip.members.length} participantes</Text>
         </View>
+
+        {summary && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate("Detalle de saldo")}
+            style={[
+              styles.heroBalance,
+              { backgroundColor: summary.myBalance >= 0 ? "#e8f7ee" : "#fef2f2", borderColor: summary.myBalance >= 0 ? "rgba(46,158,91,0.35)" : "rgba(239,68,68,0.35)" },
+            ]}
+          >
+            <View style={[styles.heroBalanceIconWrap, { backgroundColor: summary.myBalance >= 0 ? "rgba(46,158,91,0.15)" : "rgba(239,68,68,0.15)" }]}>
+              <Feather name="credit-card" size={22} color={summary.myBalance >= 0 ? colors.greenDark : colors.danger} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardLabel}>Tu saldo</Text>
+              <Text style={[styles.heroBalanceValue, { color: summary.myBalance >= 0 ? colors.greenDark : colors.danger }]}>
+                {summary.myBalance >= 0 ? "+ " : "- "}
+                {money(Math.abs(summary.myBalance))}
+              </Text>
+              <Text style={styles.heroBalanceLink}>Ver el detalle →</Text>
+            </View>
+            <Text
+              style={[
+                styles.heroBalanceBadge,
+                { backgroundColor: summary.myBalance >= 0 ? "rgba(46,158,91,0.15)" : "rgba(239,68,68,0.15)", color: summary.myBalance >= 0 ? colors.greenDark : colors.danger },
+              ]}
+            >
+              {summary.myBalance >= 0 ? "A tu favor" : "Debés"}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.quickActions}>
           {(
@@ -105,9 +139,9 @@ export function HomeScreen({ navigation }: any) {
                   {summary.settlements.map((s, i) => (
                     <View key={i} style={styles.settlementRow}>
                       <View style={styles.settlementNames}>
-                        <Avatar userId={s.fromUserId} name={s.fromName} size={22} />
+                        <Avatar userId={s.fromUserId} name={s.fromName} color={s.fromAvatarColor} size={22} />
                         <Feather name="arrow-right" size={12} color={colors.muted} />
-                        <Avatar userId={s.toUserId} name={s.toName} size={22} />
+                        <Avatar userId={s.toUserId} name={s.toName} color={s.toAvatarColor} size={22} />
                         <Text style={styles.settlementText} numberOfLines={1}>
                           {s.fromName} → {s.toName}
                         </Text>
@@ -136,7 +170,7 @@ export function HomeScreen({ navigation }: any) {
                       <View key={p.userId}>
                         <View style={styles.timeRow}>
                           <View style={styles.settlementNames}>
-                            <Avatar userId={p.userId} name={p.name} size={20} />
+                            <Avatar userId={p.userId} name={p.name} color={p.avatarColor} size={20} />
                             <Text style={styles.rowTitle}>{p.name}</Text>
                           </View>
                           <Text style={styles.rowAmount}>{formatDuration(p.totalSeconds)}</Text>
@@ -151,22 +185,13 @@ export function HomeScreen({ navigation }: any) {
               )}
             </View>
 
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Tu saldo</Text>
-              <Text style={[styles.balance, { color: summary.myBalance >= 0 ? colors.greenDark : colors.danger }]}>
-                {summary.myBalance >= 0 ? "+ " : "- "}
-                {money(Math.abs(summary.myBalance))}
-              </Text>
-              <Text style={styles.cardSub}>{summary.myBalance >= 0 ? "A tu favor" : "Debés"}</Text>
-            </View>
-
             {summary.recentExpenses[0] && (
               <View style={styles.card}>
                 <Text style={styles.cardLabel}>Gasto reciente</Text>
                 <View style={styles.rowBetween}>
                   <View>
                     <Text style={styles.rowTitle}>{summary.recentExpenses[0].description}</Text>
-                    <Text style={styles.cardSub}>Pagó: {summary.recentExpenses[0].paidBy.name}</Text>
+                    <Text style={styles.cardSub}>Pagó: {displayName(summary.recentExpenses[0].paidBy)}</Text>
                   </View>
                   <Text style={styles.rowAmount}>{money(summary.recentExpenses[0].amount)}</Text>
                 </View>
@@ -179,7 +204,9 @@ export function HomeScreen({ navigation }: any) {
                 <View style={styles.rowBetween}>
                   <View>
                     <Text style={styles.rowTitle}>{summary.pendingTasks[0].title}</Text>
-                    <Text style={styles.cardSub}>Asignada a: {summary.pendingTasks[0].assignedTo?.name ?? "Sin asignar"}</Text>
+                    <Text style={styles.cardSub}>
+                      Asignada a: {summary.pendingTasks[0].assignedTo ? displayName(summary.pendingTasks[0].assignedTo) : "Sin asignar"}
+                    </Text>
                   </View>
                   {summary.pendingTasks[0].dueDate && (
                     <Text style={styles.rowAmount}>{formatDate(summary.pendingTasks[0].dueDate)}</Text>
@@ -200,6 +227,11 @@ const styles = StyleSheet.create({
   bannerHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   bannerTitle: { color: "white", fontSize: 18, fontWeight: "700" },
   bannerSub: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginTop: 2 },
+  heroBalance: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, borderWidth: 2, padding: 16 },
+  heroBalanceIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  heroBalanceValue: { fontSize: 26, fontWeight: "800" },
+  heroBalanceLink: { fontSize: 11, color: colors.muted, marginTop: 2 },
+  heroBalanceBadge: { fontSize: 12, fontWeight: "700", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, overflow: "hidden" },
   quickActions: { flexDirection: "row", justifyContent: "space-between" },
   quickAction: { alignItems: "center", backgroundColor: "white", borderRadius: 14, padding: 12, flex: 1, marginHorizontal: 4, borderWidth: 1, borderColor: colors.border },
   quickActionIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E8F5EC", alignItems: "center", justifyContent: "center" },
@@ -211,7 +243,6 @@ const styles = StyleSheet.create({
   cardHeaderTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
   cardLabel: { fontSize: 12, color: colors.muted, marginBottom: 6 },
   cardSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  balance: { fontSize: 24, fontWeight: "700" },
   rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   rowTitle: { fontSize: 14, fontWeight: "600", color: colors.text },
   rowAmount: { fontSize: 14, fontWeight: "700", color: colors.text },

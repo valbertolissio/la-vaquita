@@ -3,6 +3,8 @@ export interface User {
   name: string;
   email: string;
   avatarUrl: string | null;
+  nickname: string | null;
+  avatarColor: string | null;
 }
 
 export interface TripMember {
@@ -67,6 +69,7 @@ export interface Task {
 export interface MemberBalance {
   userId: string;
   name: string;
+  avatarColor: string | null;
   paid: number;
   owed: number;
   balance: number;
@@ -75,14 +78,17 @@ export interface MemberBalance {
 export interface Settlement {
   fromUserId: string;
   fromName: string;
+  fromAvatarColor: string | null;
   toUserId: string;
   toName: string;
+  toAvatarColor: string | null;
   amount: number;
 }
 
 export interface ParticipantTime {
   userId: string;
   name: string;
+  avatarColor: string | null;
   totalSeconds: number;
   taskCount: number;
 }

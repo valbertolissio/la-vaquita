@@ -7,7 +7,7 @@ import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { Task } from "../lib/types";
 import { colors } from "../lib/theme";
-import { formatDate, formatDuration } from "../lib/format";
+import { formatDate, formatDuration, displayName } from "../lib/format";
 import { LiveTimer } from "../components/LiveTimer";
 
 export function TasksScreen({ navigation }: any) {
@@ -96,7 +96,7 @@ export function TasksScreen({ navigation }: any) {
             >
               <Text style={[styles.cardTitle, item.status === "DONE" && styles.done]}>{item.title}</Text>
               <View style={styles.subRow}>
-                <Text style={styles.cardSub}>Asignada a: {item.assignedTo?.name ?? "Sin asignar"}</Text>
+                <Text style={styles.cardSub}>Asignada a: {item.assignedTo ? displayName(item.assignedTo) : "Sin asignar"}</Text>
                 {item.assignmentType === "ROTATING" && (
                   <View style={styles.badge}>
                     <Feather name="repeat" size={9} color={colors.greenDark} />

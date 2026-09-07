@@ -8,4 +8,6 @@ export const safeUserSelect = {
   name: true,
   email: true,
   avatarUrl: true,
+  nickname: true,
+  avatarColor: true,
 } as const;
