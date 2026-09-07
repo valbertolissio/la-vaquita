@@ -2,6 +2,7 @@ import { Response } from "express";
 import crypto from "crypto";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
+import { safeUserSelect } from "../lib/selects";
 import { AuthedRequest } from "../middleware/auth";
 import { computeTripBalances, simplifyDebts } from "../lib/balances";
 
@@ -69,7 +70,7 @@ export async function getTrip(req: AuthedRequest, res: Response) {
   const trip = await prisma.trip.findUnique({
     where: { id: req.params.tripId },
     include: {
-      members: { include: { user: { select: { id: true, name: true, avatarUrl: true, email: true } } } },
+      members: { include: { user: { select: safeUserSelect } } },
       categories: true,
     },
   });
@@ -81,19 +82,37 @@ export async function getTrip(req: AuthedRequest, res: Response) {
 export async function getTripSummary(req: AuthedRequest, res: Response) {
   const tripId = req.params.tripId;
 
-  const [expenses, pendingTasks, balances] = await Promise.all([
+  const [expenses, pendingTasks, balances, timeCompletions] = await Promise.all([
     prisma.expense.findMany({
       where: { tripId },
-      include: { paidBy: true, category: true },
+      include: { paidBy: { select: safeUserSelect }, category: true },
       orderBy: { expenseDate: "desc" },
     }),
     prisma.task.findMany({
       where: { tripId, status: "PENDING" },
-      include: { assignedTo: true },
+      include: { assignedTo: { select: safeUserSelect } },
       orderBy: { dueDate: "asc" },
     }),
     computeTripBalances(tripId),
+    prisma.taskCompletion.findMany({
+      where: { task: { tripId }, durationSeconds: { not: null } },
+      include: { completedBy: { select: safeUserSelect } },
+    }),
   ]);
+
+  const timeByUser = new Map<string, { userId: string; name: string; totalSeconds: number; taskCount: number }>();
+  for (const c of timeCompletions) {
+    const entry = timeByUser.get(c.completedById) ?? {
+      userId: c.completedById,
+      name: c.completedBy.name,
+      totalSeconds: 0,
+      taskCount: 0,
+    };
+    entry.totalSeconds += c.durationSeconds ?? 0;
+    entry.taskCount += 1;
+    timeByUser.set(c.completedById, entry);
+  }
+  const timeByParticipant = Array.from(timeByUser.values()).sort((a, b) => b.totalSeconds - a.totalSeconds);
 
   const totalExpense = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
   const myBalance = balances.find((b) => b.userId === req.userId)?.balance ?? 0;
@@ -122,6 +141,7 @@ export async function getTripSummary(req: AuthedRequest, res: Response) {
     recentExpenses: expenses.slice(0, 6),
     pendingTasks: pendingTasks.slice(0, 6),
     expensesByCategory: Array.from(byCategory.values()),
+    timeByParticipant,
   });
 }
 
@@ -140,7 +160,7 @@ export async function updateTrip(req: AuthedRequest, res: Response) {
     where: { id: tripId },
     data: parsed.data,
     include: {
-      members: { include: { user: { select: { id: true, name: true, avatarUrl: true, email: true } } } },
+      members: { include: { user: { select: safeUserSelect } } },
       categories: true,
     },
   });

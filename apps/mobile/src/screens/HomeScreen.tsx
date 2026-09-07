@@ -8,7 +8,8 @@ import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
 import { TripSummary } from "../lib/types";
 import { colors } from "../lib/theme";
-import { money, formatDate } from "../lib/format";
+import { money, formatDate, formatDuration } from "../lib/format";
+import { Avatar } from "../components/Avatar";
 
 export function HomeScreen({ navigation }: any) {
   const { user } = useAuth();
@@ -24,13 +25,13 @@ export function HomeScreen({ navigation }: any) {
   if (!trip) return null;
 
   const isOrganizer = trip.members.find((m) => m.userId === user?.id)?.role === "ORGANIZER";
+  const totalTimeSeconds = summary?.timeByParticipant.reduce((s, p) => s + p.totalSeconds, 0) ?? 0;
 
   function showOptions() {
     if (!trip) return;
-    const options: any[] = [
-      { text: "Cambiar de viaje", onPress: () => setTrip(null) },
-    ];
+    const options: any[] = [{ text: "Cambiar de viaje", onPress: () => setTrip(null) }];
     if (isOrganizer) {
+      options.push({ text: "Editar viaje", onPress: () => navigation.navigate("Editar viaje") });
       options.push({
         text: "Eliminar viaje",
         style: "destructive",
@@ -76,7 +77,6 @@ export function HomeScreen({ navigation }: any) {
               { icon: "dollar-sign", label: "Gastos", to: "Gastos" },
               { icon: "clipboard", label: "Tareas", to: "Tareas" },
               { icon: "users", label: "Participantes", to: "Participantes" },
-              { icon: "bar-chart-2", label: "Resumen", to: "Inicio" },
             ] as const
           ).map((a) => (
             <TouchableOpacity key={a.label} style={styles.quickAction} onPress={() => navigation.navigate(a.to)}>
@@ -90,6 +90,67 @@ export function HomeScreen({ navigation }: any) {
 
         {summary && (
           <>
+            {/* Lo principal: saldar cuentas y tiempo dedicado a tareas */}
+            <View style={[styles.card, styles.highlightCard, { borderColor: "rgba(46,158,91,0.3)" }]}>
+              <View style={styles.cardHeaderRow}>
+                <View style={[styles.cardIconWrap, { backgroundColor: "#e8f7ee" }]}>
+                  <Feather name="repeat" size={16} color={colors.greenDark} />
+                </View>
+                <Text style={styles.cardHeaderTitle}>Para saldar cuentas</Text>
+              </View>
+              {summary.settlements.length === 0 ? (
+                <Text style={styles.cardSub}>Todos están al día — nadie le debe nada a nadie.</Text>
+              ) : (
+                <View style={{ gap: 8 }}>
+                  {summary.settlements.map((s, i) => (
+                    <View key={i} style={styles.settlementRow}>
+                      <View style={styles.settlementNames}>
+                        <Avatar userId={s.fromUserId} name={s.fromName} size={22} />
+                        <Feather name="arrow-right" size={12} color={colors.muted} />
+                        <Avatar userId={s.toUserId} name={s.toName} size={22} />
+                        <Text style={styles.settlementText} numberOfLines={1}>
+                          {s.fromName} → {s.toName}
+                        </Text>
+                      </View>
+                      <Text style={styles.settlementAmount}>{money(s.amount)}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            <View style={[styles.card, styles.highlightCard, { borderColor: "rgba(217,119,6,0.3)" }]}>
+              <View style={styles.cardHeaderRow}>
+                <View style={[styles.cardIconWrap, { backgroundColor: "#fffbeb" }]}>
+                  <Feather name="clock" size={16} color="#b45309" />
+                </View>
+                <Text style={styles.cardHeaderTitle}>Tiempo dedicado a tareas</Text>
+              </View>
+              {summary.timeByParticipant.length === 0 ? (
+                <Text style={styles.cardSub}>Todavía no hay tareas con cronómetro completadas.</Text>
+              ) : (
+                <View style={{ gap: 10 }}>
+                  {summary.timeByParticipant.map((p) => {
+                    const pct = totalTimeSeconds ? Math.round((p.totalSeconds / totalTimeSeconds) * 100) : 0;
+                    return (
+                      <View key={p.userId}>
+                        <View style={styles.timeRow}>
+                          <View style={styles.settlementNames}>
+                            <Avatar userId={p.userId} name={p.name} size={20} />
+                            <Text style={styles.rowTitle}>{p.name}</Text>
+                          </View>
+                          <Text style={styles.rowAmount}>{formatDuration(p.totalSeconds)}</Text>
+                        </View>
+                        <View style={styles.progressTrack}>
+                          <View style={[styles.progressFill, { width: `${pct}%` }]} />
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+
             <View style={styles.card}>
               <Text style={styles.cardLabel}>Tu saldo</Text>
               <Text style={[styles.balance, { color: summary.myBalance >= 0 ? colors.greenDark : colors.danger }]}>
@@ -144,10 +205,21 @@ const styles = StyleSheet.create({
   quickActionIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E8F5EC", alignItems: "center", justifyContent: "center" },
   quickActionLabel: { fontSize: 11, color: colors.muted, marginTop: 6 },
   card: { backgroundColor: "white", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
+  highlightCard: { borderWidth: 2 },
+  cardHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  cardIconWrap: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  cardHeaderTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
   cardLabel: { fontSize: 12, color: colors.muted, marginBottom: 6 },
   cardSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
   balance: { fontSize: 24, fontWeight: "700" },
   rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   rowTitle: { fontSize: 14, fontWeight: "600", color: colors.text },
   rowAmount: { fontSize: 14, fontWeight: "700", color: colors.text },
+  settlementRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.background, borderRadius: 10, padding: 10 },
+  settlementNames: { flexDirection: "row", alignItems: "center", gap: 6, flex: 1 },
+  settlementText: { fontSize: 12, fontWeight: "600", color: colors.text, flexShrink: 1 },
+  settlementAmount: { fontSize: 13, fontWeight: "700", color: colors.text },
+  timeRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  progressTrack: { height: 6, borderRadius: 3, backgroundColor: colors.background, overflow: "hidden" },
+  progressFill: { height: "100%", backgroundColor: "#f59e0b", borderRadius: 3 },
 });

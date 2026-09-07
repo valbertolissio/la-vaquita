@@ -59,14 +59,21 @@ export const api = {
   listExpenses: (tripId: string) => request<any[]>(`/trips/${tripId}/expenses`),
   createExpense: (tripId: string, data: any) =>
     request(`/trips/${tripId}/expenses`, { method: "POST", body: JSON.stringify(data) }),
+  updateExpense: (tripId: string, expenseId: string, data: any) =>
+    request(`/trips/${tripId}/expenses/${expenseId}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteExpense: (tripId: string, expenseId: string) =>
     request(`/trips/${tripId}/expenses/${expenseId}`, { method: "DELETE" }),
 
   listTasks: (tripId: string) => request<any[]>(`/trips/${tripId}/tasks`),
   createTask: (tripId: string, data: any) =>
     request(`/trips/${tripId}/tasks`, { method: "POST", body: JSON.stringify(data) }),
+  updateTask: (tripId: string, taskId: string, data: any) =>
+    request(`/trips/${tripId}/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify(data) }),
   completeTask: (tripId: string, taskId: string) =>
-    request(`/trips/${tripId}/tasks/${taskId}/complete`, { method: "POST" }),
+    request<{ task: any; durationSeconds: number | null; rotated: boolean; nextAssignee: { id: string; name: string } | null }>(
+      `/trips/${tripId}/tasks/${taskId}/complete`,
+      { method: "POST" }
+    ),
   deleteTask: (tripId: string, taskId: string) =>
     request(`/trips/${tripId}/tasks/${taskId}`, { method: "DELETE" }),
 };

@@ -49,14 +49,24 @@ export interface Expense {
   splits: ExpenseSplit[];
 }
 
+export interface TaskCompletion {
+  id: string;
+  completedAt: string;
+  durationSeconds: number | null;
+  completedBy: User;
+}
+
 export interface Task {
   id: string;
   title: string;
   description: string | null;
+  startDate: string | null;
   dueDate: string | null;
+  timeTracked: boolean;
   status: "PENDING" | "DONE";
   assignmentType: "MANUAL" | "ROTATING";
   assignedTo: User | null;
+  completions?: TaskCompletion[];
 }
 
 export interface MemberBalance {
@@ -76,6 +86,13 @@ export interface Settlement {
   amount: number;
 }
 
+export interface ParticipantTime {
+  userId: string;
+  name: string;
+  totalSeconds: number;
+  taskCount: number;
+}
+
 export interface TripSummary {
   totalExpense: number;
   expenseCount: number;
@@ -87,4 +104,5 @@ export interface TripSummary {
   recentExpenses: Expense[];
   pendingTasks: Task[];
   expensesByCategory: { name: string; color: string | null; total: number }[];
+  timeByParticipant: ParticipantTime[];
 }

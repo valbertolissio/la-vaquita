@@ -1,11 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { Wallet, PiggyBank, Receipt, ClipboardList, UtensilsCrossed, Car, Home, PartyPopper, LucideIcon } from "lucide-react";
+import {
+  Wallet,
+  PiggyBank,
+  Receipt,
+  ClipboardList,
+  UtensilsCrossed,
+  Car,
+  Home,
+  PartyPopper,
+  LucideIcon,
+  HandCoins,
+  Clock,
+  ArrowRight,
+} from "lucide-react";
 import { api } from "../lib/api";
 import { TripSummary } from "../lib/types";
 import { StatCard } from "../components/StatCard";
-import { avatarColor, formatDate, formatMoney, initials } from "../lib/format";
+import { avatarColor, formatDate, formatDuration, formatMoney, initials } from "../lib/format";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Alimentación: UtensilsCrossed,
@@ -33,6 +46,8 @@ export function Dashboard() {
 
   if (!summary) return <p className="text-slate-400">Cargando resumen...</p>;
 
+  const totalTimeSeconds = summary.timeByParticipant.reduce((s, p) => s + p.totalSeconds, 0);
+
   return (
     <div className="space-y-6">
       <div className="flex gap-4">
@@ -46,6 +61,74 @@ export function Dashboard() {
         />
         <StatCard icon={Receipt} label="Pendiente total" value={formatMoney(summary.pendingTotal)} sub="Entre todos" />
         <StatCard icon={ClipboardList} label="Tareas pendientes" value={String(summary.pendingTaskCount)} sub={`Para hoy: ${summary.pendingTasks.length}`} />
+      </div>
+
+      {/* Lo principal de la app: saldar cuentas y ver cuánto tiempo metió cada uno */}
+      <div className="grid grid-cols-2 gap-6">
+        <div className="rounded-2xl border-2 border-vaquita-green/30 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-vaquita-green/10 text-vaquita-greenDark">
+              <HandCoins size={18} strokeWidth={2} />
+            </span>
+            <h2 className="text-base font-bold text-slate-800">Para saldar cuentas</h2>
+          </div>
+          {summary.settlements.length === 0 ? (
+            <p className="text-sm text-slate-400">Todos están al día — nadie le debe nada a nadie. 🎉</p>
+          ) : (
+            <ul className="space-y-2">
+              {summary.settlements.map((s, i) => (
+                <li key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5 text-sm">
+                  <span className="flex items-center gap-1.5 font-medium text-slate-700">
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(s.fromUserId).bg} ${avatarColor(s.fromUserId).text}`}>
+                      {initials(s.fromName)}
+                    </span>
+                    {s.fromName}
+                    <ArrowRight size={13} className="text-slate-400" />
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(s.toUserId).bg} ${avatarColor(s.toUserId).text}`}>
+                      {initials(s.toName)}
+                    </span>
+                    {s.toName}
+                  </span>
+                  <span className="font-bold text-slate-800">{formatMoney(s.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="rounded-2xl border-2 border-amber-300/40 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+              <Clock size={18} strokeWidth={2} />
+            </span>
+            <h2 className="text-base font-bold text-slate-800">Tiempo dedicado a tareas</h2>
+          </div>
+          {summary.timeByParticipant.length === 0 ? (
+            <p className="text-sm text-slate-400">Todavía no hay tareas con cronómetro completadas.</p>
+          ) : (
+            <ul className="space-y-2.5">
+              {summary.timeByParticipant.map((p) => {
+                const pct = totalTimeSeconds ? Math.round((p.totalSeconds / totalTimeSeconds) * 100) : 0;
+                return (
+                  <li key={p.userId}>
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span className="flex items-center gap-1.5 font-medium text-slate-700">
+                        <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(p.userId).bg} ${avatarColor(p.userId).text}`}>
+                          {initials(p.name)}
+                        </span>
+                        {p.name}
+                      </span>
+                      <span className="font-bold text-slate-800">{formatDuration(p.totalSeconds)}</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-6">

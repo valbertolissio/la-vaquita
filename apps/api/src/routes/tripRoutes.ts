@@ -12,8 +12,8 @@ import {
   listTrips,
   updateTrip,
 } from "../controllers/tripController";
-import { createExpense, deleteExpense, listExpenses, scanReceipt } from "../controllers/expenseController";
-import { completeTask, createTask, deleteTask, listTasks } from "../controllers/taskController";
+import { createExpense, deleteExpense, listExpenses, scanReceipt, updateExpense } from "../controllers/expenseController";
+import { completeTask, createTask, deleteTask, listTasks, updateTask } from "../controllers/taskController";
 
 const upload = multer({ dest: "uploads/" });
 
@@ -33,10 +33,12 @@ tripRoutes.post("/:tripId/invitations", requireTripMember, inviteMember);
 
 tripRoutes.get("/:tripId/expenses", requireTripMember, listExpenses);
 tripRoutes.post("/:tripId/expenses", requireTripMember, createExpense);
+tripRoutes.patch("/:tripId/expenses/:expenseId", requireTripMember, updateExpense);
 tripRoutes.delete("/:tripId/expenses/:expenseId", requireTripMember, deleteExpense);
 tripRoutes.post("/:tripId/expenses/scan-receipt", requireTripMember, upload.single("receipt"), scanReceipt);
 
 tripRoutes.get("/:tripId/tasks", requireTripMember, listTasks);
 tripRoutes.post("/:tripId/tasks", requireTripMember, createTask);
+tripRoutes.patch("/:tripId/tasks/:taskId", requireTripMember, updateTask);
 tripRoutes.post("/:tripId/tasks/:taskId/complete", requireTripMember, completeTask);
 tripRoutes.delete("/:tripId/tasks/:taskId", requireTripMember, deleteTask);

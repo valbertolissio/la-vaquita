@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
+import { safeUserSelect } from "../lib/selects";
 import { AuthedRequest } from "../middleware/auth";
 
 const createExpenseSchema = z.object({
@@ -11,6 +12,16 @@ const createExpenseSchema = z.object({
   splitBetween: z.array(z.string().uuid()).min(1, "Elegí entre quiénes se divide el gasto"),
   source: z.enum(["MANUAL", "OCR"]).default("MANUAL"),
   receiptUrl: z.string().optional(),
+  notes: z.string().optional(),
+  expenseDate: z.coerce.date().optional(),
+});
+
+const updateExpenseSchema = z.object({
+  description: z.string().min(1).optional(),
+  amount: z.number().positive().optional(),
+  categoryId: z.string().uuid().nullable().optional(),
+  paidById: z.string().uuid().optional(),
+  splitBetween: z.array(z.string().uuid()).min(1).optional(),
   notes: z.string().optional(),
   expenseDate: z.coerce.date().optional(),
 });
@@ -28,7 +39,7 @@ function buildEqualSplits(totalAmount: number, userIds: string[]) {
 export async function listExpenses(req: AuthedRequest, res: Response) {
   const expenses = await prisma.expense.findMany({
     where: { tripId: req.params.tripId },
-    include: { paidBy: true, category: true, splits: { include: { user: true } } },
+    include: { paidBy: { select: safeUserSelect }, category: true, splits: { include: { user: { select: safeUserSelect } } } },
     orderBy: { expenseDate: "desc" },
   });
   res.json(expenses);
@@ -49,10 +60,41 @@ export async function createExpense(req: AuthedRequest, res: Response) {
       createdById: req.userId!,
       splits: { create: splits },
     },
-    include: { splits: true, paidBy: true, category: true },
+    include: { splits: true, paidBy: { select: safeUserSelect }, category: true },
   });
 
   res.status(201).json(expense);
+}
+
+export async function updateExpense(req: AuthedRequest, res: Response) {
+  const expense = await prisma.expense.findUnique({ where: { id: req.params.expenseId }, include: { splits: true } });
+  if (!expense) return res.status(404).json({ error: "Gasto no encontrado" });
+
+  const parsed = updateExpenseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
+  }
+  const { splitBetween, ...data } = parsed.data;
+
+  const finalAmount = data.amount ?? Number(expense.amount);
+  const needsResplit = splitBetween !== undefined || data.amount !== undefined;
+
+  const updated = await prisma.$transaction(async (tx) => {
+    if (needsResplit) {
+      const memberIds = splitBetween ?? expense.splits.map((s) => s.userId);
+      await tx.expenseSplit.deleteMany({ where: { expenseId: expense.id } });
+      await tx.expenseSplit.createMany({
+        data: buildEqualSplits(finalAmount, memberIds).map((s) => ({ ...s, expenseId: expense.id })),
+      });
+    }
+    return tx.expense.update({
+      where: { id: expense.id },
+      data,
+      include: { splits: { include: { user: { select: safeUserSelect } } }, paidBy: { select: safeUserSelect }, category: true },
+    });
+  });
+
+  res.json(updated);
 }
 
 export async function deleteExpense(req: AuthedRequest, res: Response) {

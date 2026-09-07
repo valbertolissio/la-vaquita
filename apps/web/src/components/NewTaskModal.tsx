@@ -1,20 +1,28 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { api } from "../lib/api";
-import { Trip } from "../lib/types";
+import { Task, Trip } from "../lib/types";
 
 interface Props {
   tripId: string;
   trip: Trip;
+  task?: Task;
   onClose: () => void;
   onCreated: () => void;
 }
 
-export function NewTaskModal({ tripId, trip, onClose, onCreated }: Props) {
-  const [title, setTitle] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [assignmentType, setAssignmentType] = useState<"MANUAL" | "ROTATING">("MANUAL");
-  const [assignedToId, setAssignedToId] = useState(trip.members[0]?.userId ?? "");
+function toDateInputValue(iso: string | null) {
+  return iso ? iso.slice(0, 10) : "";
+}
+
+export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) {
+  const isEditing = !!task;
+  const [title, setTitle] = useState(task?.title ?? "");
+  const [scheduleMode, setScheduleMode] = useState<"MANUAL" | "TIMER">(task?.timeTracked ? "TIMER" : "MANUAL");
+  const [startDate, setStartDate] = useState(toDateInputValue(task?.startDate ?? null));
+  const [dueDate, setDueDate] = useState(toDateInputValue(task?.dueDate ?? null));
+  const [assignmentType, setAssignmentType] = useState<"MANUAL" | "ROTATING">(task?.assignmentType ?? "MANUAL");
+  const [assignedToId, setAssignedToId] = useState(task?.assignedTo?.id ?? trip.members[0]?.userId ?? "");
   const [rotationMembers, setRotationMembers] = useState<string[]>(trip.members.map((m) => m.userId));
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -29,15 +37,28 @@ export function NewTaskModal({ tripId, trip, onClose, onCreated }: Props) {
       setError("Ponele un título a la tarea.");
       return;
     }
+    if (!isEditing && assignmentType === "ROTATING" && rotationMembers.length < 2) {
+      setError("Un turno rotativo necesita al menos 2 integrantes.");
+      return;
+    }
     setSubmitting(true);
     try {
-      await api.createTask(tripId, {
+      const payload = {
         title,
-        dueDate: dueDate || undefined,
-        assignmentType,
-        assignedToId: assignmentType === "MANUAL" ? assignedToId : undefined,
-        rotationMembers: assignmentType === "ROTATING" ? rotationMembers : undefined,
-      });
+        startDate: startDate || undefined,
+        dueDate: scheduleMode === "MANUAL" ? dueDate || undefined : undefined,
+        timeTracked: scheduleMode === "TIMER",
+      };
+      if (isEditing) {
+        await api.updateTask(tripId, task!.id, { ...payload, assignedToId: assignmentType === "MANUAL" ? assignedToId : undefined });
+      } else {
+        await api.createTask(tripId, {
+          ...payload,
+          assignmentType,
+          assignedToId: assignmentType === "MANUAL" ? assignedToId : undefined,
+          rotationMembers: assignmentType === "ROTATING" ? rotationMembers : undefined,
+        });
+      }
       onCreated();
     } catch (e: any) {
       setError(e.message);
@@ -50,7 +71,7 @@ export function NewTaskModal({ tripId, trip, onClose, onCreated }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-800">Tarea nueva</h3>
+          <h3 className="text-lg font-semibold text-slate-800">{isEditing ? "Editar tarea" : "Tarea nueva"}</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X size={18} strokeWidth={2} />
           </button>
@@ -66,30 +87,77 @@ export function NewTaskModal({ tripId, trip, onClose, onCreated }: Props) {
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             />
           </div>
+
           <div>
-            <label className="text-xs font-medium text-slate-500">Fecha</label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            />
+            <label className="text-xs font-medium text-slate-500">¿Cómo querés controlar el tiempo?</label>
+            <div className="mt-1 flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
+              <button
+                onClick={() => setScheduleMode("MANUAL")}
+                className={`flex-1 rounded-md py-1.5 ${scheduleMode === "MANUAL" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+              >
+                Fechas manuales
+              </button>
+              <button
+                onClick={() => setScheduleMode("TIMER")}
+                className={`flex-1 rounded-md py-1.5 ${scheduleMode === "TIMER" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+              >
+                Cronómetro
+              </button>
+            </div>
           </div>
 
-          <div className="flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
-            <button
-              onClick={() => setAssignmentType("MANUAL")}
-              className={`flex-1 rounded-md py-1.5 ${assignmentType === "MANUAL" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
-            >
-              Asignación manual
-            </button>
-            <button
-              onClick={() => setAssignmentType("ROTATING")}
-              className={`flex-1 rounded-md py-1.5 ${assignmentType === "ROTATING" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
-            >
-              Turno rotativo
-            </button>
-          </div>
+          {scheduleMode === "MANUAL" ? (
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="text-xs font-medium text-slate-500">Inicio (opcional)</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs font-medium text-slate-500">Fin</label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="text-xs font-medium text-slate-500">Inicio</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Si lo dejás vacío, arranca a contar desde ahora. Al marcarla como hecha vas a ver cuánto tiempo llevó.
+              </p>
+            </div>
+          )}
+
+          {!isEditing && (
+            <div className="flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
+              <button
+                onClick={() => setAssignmentType("MANUAL")}
+                className={`flex-1 rounded-md py-1.5 ${assignmentType === "MANUAL" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+              >
+                Asignación manual
+              </button>
+              <button
+                onClick={() => setAssignmentType("ROTATING")}
+                className={`flex-1 rounded-md py-1.5 ${assignmentType === "ROTATING" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+              >
+                Turno rotativo
+              </button>
+            </div>
+          )}
 
           {assignmentType === "MANUAL" ? (
             <div>
@@ -106,7 +174,7 @@ export function NewTaskModal({ tripId, trip, onClose, onCreated }: Props) {
                 ))}
               </select>
             </div>
-          ) : (
+          ) : !isEditing ? (
             <div>
               <label className="text-xs font-medium text-slate-500">Integrantes del turno (en orden)</label>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -126,6 +194,10 @@ export function NewTaskModal({ tripId, trip, onClose, onCreated }: Props) {
                 ))}
               </div>
             </div>
+          ) : (
+            <p className="text-xs text-slate-400">
+              Es un turno rotativo — el orden de integrantes no se puede editar acá, solo título y fechas.
+            </p>
           )}
 
           {error && <p className="text-sm text-red-500">{error}</p>}
@@ -135,7 +207,7 @@ export function NewTaskModal({ tripId, trip, onClose, onCreated }: Props) {
             disabled={submitting}
             className="mt-2 w-full rounded-lg bg-vaquita-green py-2.5 text-sm font-semibold text-white hover:bg-vaquita-greenDark disabled:opacity-60"
           >
-            {submitting ? "Guardando..." : "Guardar tarea"}
+            {submitting ? "Guardando..." : isEditing ? "Guardar cambios" : "Guardar tarea"}
           </button>
         </div>
       </div>

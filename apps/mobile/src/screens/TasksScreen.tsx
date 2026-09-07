@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
@@ -7,11 +7,13 @@ import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { Task } from "../lib/types";
 import { colors } from "../lib/theme";
-import { formatDate } from "../lib/format";
+import { formatDate, formatDuration } from "../lib/format";
+import { LiveTimer } from "../components/LiveTimer";
 
 export function TasksScreen({ navigation }: any) {
   const { trip } = useTrip();
   const [tasks, setTasks] = useState<Task[] | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     if (trip) api.listTasks(trip.id).then(setTasks);
@@ -23,11 +25,23 @@ export function TasksScreen({ navigation }: any) {
     }, [reload])
   );
 
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 4500);
+    return () => clearTimeout(id);
+  }, [toast]);
+
   if (!trip) return null;
 
   async function toggleDone(task: Task) {
     if (task.status === "DONE" || !trip) return;
-    await api.completeTask(trip.id, task.id);
+    const result = await api.completeTask(trip.id, task.id);
+    const durationText = result.durationSeconds != null ? ` (te llevó ${formatDuration(result.durationSeconds)})` : "";
+    if (result.rotated && result.nextAssignee) {
+      setToast(`¡Listo${durationText}! Ahora le toca a ${result.nextAssignee.name}.`);
+    } else {
+      setToast(`¡Tarea completada${durationText}!`);
+    }
     reload();
   }
 
@@ -54,6 +68,13 @@ export function TasksScreen({ navigation }: any) {
           <Text style={styles.addButtonText}> Tarea</Text>
         </TouchableOpacity>
       </View>
+
+      {toast && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      )}
+
       <FlatList
         data={tasks ?? []}
         keyExtractor={(t) => t.id}
@@ -62,11 +83,17 @@ export function TasksScreen({ navigation }: any) {
           tasks === null ? <Text style={styles.empty}>Cargando tareas...</Text> : <Text style={styles.empty}>Todavía no hay tareas.</Text>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onPress={() => toggleDone(item)} onLongPress={() => confirmDelete(item)}>
-            <View style={[styles.checkbox, item.status === "DONE" && styles.checkboxDone]}>
-              {item.status === "DONE" && <Feather name="check" size={13} color="white" />}
-            </View>
-            <View style={{ flex: 1 }}>
+          <View style={styles.card}>
+            <TouchableOpacity onPress={() => toggleDone(item)} hitSlop={8}>
+              <View style={[styles.checkbox, item.status === "DONE" && styles.checkboxDone]}>
+                {item.status === "DONE" && <Feather name="check" size={13} color="white" />}
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              onPress={() => navigation.navigate("Tarea nueva", { task: item })}
+              onLongPress={() => confirmDelete(item)}
+            >
               <Text style={[styles.cardTitle, item.status === "DONE" && styles.done]}>{item.title}</Text>
               <View style={styles.subRow}>
                 <Text style={styles.cardSub}>Asignada a: {item.assignedTo?.name ?? "Sin asignar"}</Text>
@@ -76,10 +103,16 @@ export function TasksScreen({ navigation }: any) {
                     <Text style={styles.badgeText}> Turno rotativo</Text>
                   </View>
                 )}
+                {item.timeTracked && item.startDate && item.status === "PENDING" && (
+                  <View style={styles.timerBadge}>
+                    <Feather name="clock" size={9} color="#b45309" />
+                    <LiveTimer startDate={item.startDate} style={styles.timerText} />
+                  </View>
+                )}
               </View>
-            </View>
+            </TouchableOpacity>
             {item.dueDate && <Text style={styles.dueDate}>{formatDate(item.dueDate)}</Text>}
-          </TouchableOpacity>
+          </View>
         )}
       />
     </SafeAreaView>
@@ -92,6 +125,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: "700", color: colors.text },
   addButton: { flexDirection: "row", alignItems: "center", backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   addButtonText: { color: "white", fontWeight: "600", fontSize: 12 },
+  toast: { marginHorizontal: 16, marginBottom: 8, backgroundColor: "#e8f7ee", borderRadius: 10, padding: 12 },
+  toastText: { color: colors.greenDark, fontWeight: "600", fontSize: 13 },
   card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "white", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border },
   checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   checkboxDone: { backgroundColor: colors.green, borderColor: colors.green },
@@ -101,6 +136,8 @@ const styles = StyleSheet.create({
   cardSub: { fontSize: 12, color: colors.muted },
   badge: { flexDirection: "row", alignItems: "center", backgroundColor: "#e8f7ee", borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2 },
   badgeText: { fontSize: 10, color: colors.greenDark, fontWeight: "600" },
+  timerBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#fffbeb", borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2 },
+  timerText: { fontSize: 10, color: "#b45309", fontWeight: "600" },
   dueDate: { fontSize: 12, color: colors.muted },
   empty: { textAlign: "center", color: colors.muted, marginTop: 40 },
 });

@@ -17,6 +17,7 @@ import { ParticipantsScreen } from "./src/screens/ParticipantsScreen";
 import { NewExpenseScreen } from "./src/screens/NewExpenseScreen";
 import { NewTaskScreen } from "./src/screens/NewTaskScreen";
 import { InviteScreen } from "./src/screens/InviteScreen";
+import { EditTripScreen } from "./src/screens/EditTripScreen";
 import { colors } from "./src/lib/theme";
 
 const Tab = createBottomTabNavigator();
@@ -72,6 +73,7 @@ function RootNavigator() {
             <Stack.Screen name="Gasto nuevo" component={NewExpenseScreen} options={{ headerShown: true, presentation: "modal" }} />
             <Stack.Screen name="Tarea nueva" component={NewTaskScreen} options={{ headerShown: true, presentation: "modal" }} />
             <Stack.Screen name="Invitar" component={InviteScreen} options={{ headerShown: true, presentation: "modal" }} />
+            <Stack.Screen name="Editar viaje" component={EditTripScreen} options={{ headerShown: true, presentation: "modal" }} />
           </>
         )}
       </Stack.Navigator>
