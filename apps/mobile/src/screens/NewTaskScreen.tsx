@@ -1,0 +1,167 @@
+import { useState } from "react";
+import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useTrip } from "../context/TripContext";
+import { api } from "../lib/api";
+import { colors } from "../lib/theme";
+
+function formatShort(d: Date) {
+  return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(d);
+}
+
+export function NewTaskScreen({ navigation }: any) {
+  const { trip } = useTrip();
+  const [title, setTitle] = useState("");
+  const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [assignmentType, setAssignmentType] = useState<"MANUAL" | "ROTATING">("MANUAL");
+  const [assignedToId, setAssignedToId] = useState(trip?.members[0]?.userId ?? "");
+  const [rotationMembers, setRotationMembers] = useState<string[]>(trip?.members.map((m) => m.userId) ?? []);
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!trip) return null;
+
+  function toggleRotationMember(userId: string) {
+    setRotationMembers((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
+  }
+
+  async function handleSubmit() {
+    if (!trip) return;
+    if (!title.trim()) {
+      Alert.alert("Falta el título", "Ponele un título a la tarea.");
+      return;
+    }
+    if (assignmentType === "ROTATING" && rotationMembers.length < 2) {
+      Alert.alert("Turno rotativo", "Elegí al menos 2 integrantes para el turno rotativo.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.createTask(trip.id, {
+        title,
+        dueDate: dueDate?.toISOString(),
+        assignmentType,
+        assignedToId: assignmentType === "MANUAL" ? assignedToId : undefined,
+        rotationMembers: assignmentType === "ROTATING" ? rotationMembers : undefined,
+      });
+      navigation.goBack();
+    } catch (e: any) {
+      Alert.alert("No se pudo guardar", e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Tarea nueva</Text>
+
+        <View>
+          <Text style={styles.label}>Título</Text>
+          <TextInput style={styles.input} placeholder="Cocinar cena" value={title} onChangeText={setTitle} />
+        </View>
+
+        <View>
+          <Text style={styles.label}>Fecha (opcional)</Text>
+          <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
+            <Text style={styles.dateText}>{dueDate ? formatShort(dueDate) : "Elegir fecha"}</Text>
+          </TouchableOpacity>
+        </View>
+        {showPicker && (
+          <DateTimePicker
+            value={dueDate ?? new Date()}
+            mode="date"
+            display={Platform.OS === "ios" ? "inline" : "default"}
+            onChange={(_event, date) => {
+              if (Platform.OS === "android") setShowPicker(false);
+              if (date) setDueDate(date);
+            }}
+          />
+        )}
+        {showPicker && Platform.OS === "ios" && (
+          <TouchableOpacity style={styles.doneButton} onPress={() => setShowPicker(false)}>
+            <Text style={styles.doneText}>Listo</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.tabs}>
+          <TouchableOpacity
+            style={[styles.tab, assignmentType === "MANUAL" && styles.tabActive]}
+            onPress={() => setAssignmentType("MANUAL")}
+          >
+            <Text style={[styles.tabText, assignmentType === "MANUAL" && styles.tabTextActive]}>Asignación manual</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, assignmentType === "ROTATING" && styles.tabActive]}
+            onPress={() => setAssignmentType("ROTATING")}
+          >
+            <Text style={[styles.tabText, assignmentType === "ROTATING" && styles.tabTextActive]}>Turno rotativo</Text>
+          </TouchableOpacity>
+        </View>
+
+        {assignmentType === "MANUAL" ? (
+          <View>
+            <Text style={styles.label}>Asignada a</Text>
+            <View style={styles.chipsRow}>
+              {trip.members.map((m) => (
+                <TouchableOpacity
+                  key={m.userId}
+                  style={[styles.chip, assignedToId === m.userId && styles.chipActive]}
+                  onPress={() => setAssignedToId(m.userId)}
+                >
+                  <Text style={[styles.chipText, assignedToId === m.userId && styles.chipTextActive]}>{m.user.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        ) : (
+          <View>
+            <Text style={styles.label}>Integrantes del turno</Text>
+            <View style={styles.chipsRow}>
+              {trip.members.map((m) => (
+                <TouchableOpacity
+                  key={m.userId}
+                  style={[styles.chip, rotationMembers.includes(m.userId) && styles.chipActive]}
+                  onPress={() => toggleRotationMember(m.userId)}
+                >
+                  <Text style={[styles.chipText, rotationMembers.includes(m.userId) && styles.chipTextActive]}>
+                    {m.user.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={submitting}>
+          <Text style={styles.submitText}>{submitting ? "Guardando..." : "Guardar tarea"}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: 16, gap: 14 },
+  title: { fontSize: 18, fontWeight: "700", color: colors.text },
+  label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: "white", justifyContent: "center" },
+  dateText: { fontSize: 14, color: colors.text },
+  doneButton: { alignSelf: "flex-end", padding: 8 },
+  doneText: { color: colors.greenDark, fontWeight: "600" },
+  tabs: { flexDirection: "row", backgroundColor: "#e8e6df", borderRadius: 10, padding: 3 },
+  tab: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },
+  tabActive: { backgroundColor: colors.green },
+  tabText: { fontSize: 12, fontWeight: "600", color: colors.muted },
+  tabTextActive: { color: "white" },
+  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  chipActive: { borderColor: colors.green, backgroundColor: "#e8f7ee" },
+  chipText: { fontSize: 12, color: colors.muted },
+  chipTextActive: { color: colors.greenDark, fontWeight: "600" },
+  submitButton: { backgroundColor: colors.green, borderRadius: 10, padding: 14, marginTop: 4 },
+  submitText: { color: "white", textAlign: "center", fontWeight: "700" },
+});

@@ -1,0 +1,232 @@
+// Modelo de base de datos de La Vaquita
+// PostgreSQL + Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tripsCreated     Trip[]            @relation("TripCreator")
+  tripMemberships  TripMember[]
+  expensesPaid     Expense[]         @relation("ExpensePayer")
+  expensesCreated  Expense[]         @relation("ExpenseCreator")
+  expenseSplits    ExpenseSplit[]
+  tasksAssigned    Task[]            @relation("TaskAssignee")
+  tasksCreated     Task[]            @relation("TaskCreator")
+  invitationsSent  Invitation[]      @relation("InvitationSender")
+  taskCompletions  TaskCompletion[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Viajes
+// ---------------------------------------------------------------------------
+
+model Trip {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  coverImage  String?  @map("cover_image")
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  currency    String   @default("ARS")
+  createdById String   @map("created_by")
+  createdBy   User     @relation("TripCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  members     TripMember[]
+  expenses    Expense[]
+  tasks       Task[]
+  invitations Invitation[]
+  categories  Category[]
+
+  @@map("trips")
+}
+
+enum TripRole {
+  ORGANIZER
+  MEMBER
+}
+
+// Tabla puente: participantes de un viaje
+model TripMember {
+  id       String   @id @default(uuid())
+  tripId   String   @map("trip_id")
+  trip     Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  userId   String   @map("user_id")
+  user     User     @relation(fields: [userId], references: [id])
+  role     TripRole @default(MEMBER)
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  // El saldo (a favor / en contra) se calcula a partir de Expense + ExpenseSplit,
+  // no se almacena de forma redundante.
+
+  @@unique([tripId, userId])
+  @@map("trip_members")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+model Invitation {
+  id         String            @id @default(uuid())
+  tripId     String            @map("trip_id")
+  trip       Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  email      String
+  token      String            @unique
+  status     InvitationStatus  @default(PENDING)
+  invitedById String           @map("invited_by")
+  invitedBy  User              @relation("InvitationSender", fields: [invitedById], references: [id])
+  createdAt  DateTime          @default(now()) @map("created_at")
+  expiresAt  DateTime          @map("expires_at")
+
+  @@map("invitations")
+}
+
+// ---------------------------------------------------------------------------
+// Categorías de gasto (por viaje, con set por defecto al crear el viaje)
+// ---------------------------------------------------------------------------
+
+model Category {
+  id     String    @id @default(uuid())
+  tripId String    @map("trip_id")
+  trip   Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  name   String
+  icon   String?
+  color  String?
+
+  expenses Expense[]
+
+  @@unique([tripId, name])
+  @@map("categories")
+}
+
+// ---------------------------------------------------------------------------
+// Gastos
+// ---------------------------------------------------------------------------
+
+enum ExpenseSource {
+  MANUAL
+  OCR
+}
+
+model Expense {
+  id          String        @id @default(uuid())
+  tripId      String        @map("trip_id")
+  trip        Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  description String
+  amount      Decimal       @db.Decimal(12, 2)
+  categoryId  String?       @map("category_id")
+  category    Category?     @relation(fields: [categoryId], references: [id])
+  paidById    String        @map("paid_by")
+  paidBy      User          @relation("ExpensePayer", fields: [paidById], references: [id])
+  createdById String        @map("created_by")
+  createdBy   User          @relation("ExpenseCreator", fields: [createdById], references: [id])
+  source      ExpenseSource @default(MANUAL)
+  receiptUrl  String?       @map("receipt_url")
+  notes       String?
+  expenseDate DateTime      @default(now()) @map("expense_date")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  splits ExpenseSplit[]
+
+  @@map("expenses")
+}
+
+// División del gasto entre integrantes ("¿entre quiénes se divide?")
+model ExpenseSplit {
+  id         String  @id @default(uuid())
+  expenseId  String  @map("expense_id")
+  expense    Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  userId     String  @map("user_id")
+  user       User    @relation(fields: [userId], references: [id])
+  amountOwed Decimal @map("amount_owed") @db.Decimal(12, 2)
+
+  @@unique([expenseId, userId])
+  @@map("expense_splits")
+}
+
+// ---------------------------------------------------------------------------
+// Tareas
+// ---------------------------------------------------------------------------
+
+enum TaskStatus {
+  PENDING
+  DONE
+}
+
+enum AssignmentType {
+  MANUAL
+  ROTATING
+}
+
+model Task {
+  id             String         @id @default(uuid())
+  tripId         String         @map("trip_id")
+  trip           Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  assignmentType AssignmentType @default(MANUAL) @map("assignment_type")
+  assignedToId   String?        @map("assigned_to")
+  assignedTo     User?          @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  rotationGroupId String?       @map("rotation_group_id")
+  rotationGroup  RotationGroup? @relation(fields: [rotationGroupId], references: [id])
+  dueDate        DateTime?      @map("due_date")
+  status         TaskStatus     @default(PENDING)
+  createdById    String         @map("created_by")
+  createdBy      User           @relation("TaskCreator", fields: [createdById], references: [id])
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  completions TaskCompletion[]
+
+  @@map("tasks")
+}
+
+// Grupo de turnos rotativos (ej: "Cocinar cena" rota entre 6 participantes)
+model RotationGroup {
+  id       String   @id @default(uuid())
+  tripId   String   @map("trip_id")
+  name     String
+  memberOrder String[] @map("member_order") // array ordenado de userId
+  cursor   Int      @default(0) // índice del próximo turno
+
+  tasks Task[]
+
+  @@map("rotation_groups")
+}
+
+model TaskCompletion {
+  id          String   @id @default(uuid())
+  taskId      String   @map("task_id")
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  completedById String @map("completed_by")
+  completedBy User     @relation(fields: [completedById], references: [id])
+  completedAt DateTime @default(now()) @map("completed_at")
+
+  @@map("task_completions")
+}
