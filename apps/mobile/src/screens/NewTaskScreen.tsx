@@ -5,18 +5,24 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { colors } from "../lib/theme";
+import { Task } from "../lib/types";
 
 function formatShort(d: Date) {
   return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(d);
 }
 
-export function NewTaskScreen({ navigation }: any) {
+export function NewTaskScreen({ navigation, route }: any) {
   const { trip } = useTrip();
-  const [title, setTitle] = useState("");
-  const [dueDate, setDueDate] = useState<Date | null>(null);
-  const [showPicker, setShowPicker] = useState(false);
-  const [assignmentType, setAssignmentType] = useState<"MANUAL" | "ROTATING">("MANUAL");
-  const [assignedToId, setAssignedToId] = useState(trip?.members[0]?.userId ?? "");
+  const task: Task | undefined = route?.params?.task;
+  const isEditing = !!task;
+
+  const [title, setTitle] = useState(task?.title ?? "");
+  const [scheduleMode, setScheduleMode] = useState<"MANUAL" | "TIMER">(task?.timeTracked ? "TIMER" : "MANUAL");
+  const [startDate, setStartDate] = useState<Date | null>(task?.startDate ? new Date(task.startDate) : null);
+  const [dueDate, setDueDate] = useState<Date | null>(task?.dueDate ? new Date(task.dueDate) : null);
+  const [showPicker, setShowPicker] = useState<"start" | "due" | null>(null);
+  const [assignmentType, setAssignmentType] = useState<"MANUAL" | "ROTATING">(task?.assignmentType ?? "MANUAL");
+  const [assignedToId, setAssignedToId] = useState(task?.assignedTo?.id ?? trip?.members[0]?.userId ?? "");
   const [rotationMembers, setRotationMembers] = useState<string[]>(trip?.members.map((m) => m.userId) ?? []);
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,19 +38,28 @@ export function NewTaskScreen({ navigation }: any) {
       Alert.alert("Falta el título", "Ponele un título a la tarea.");
       return;
     }
-    if (assignmentType === "ROTATING" && rotationMembers.length < 2) {
+    if (!isEditing && assignmentType === "ROTATING" && rotationMembers.length < 2) {
       Alert.alert("Turno rotativo", "Elegí al menos 2 integrantes para el turno rotativo.");
       return;
     }
     setSubmitting(true);
     try {
-      await api.createTask(trip.id, {
+      const payload = {
         title,
-        dueDate: dueDate?.toISOString(),
-        assignmentType,
-        assignedToId: assignmentType === "MANUAL" ? assignedToId : undefined,
-        rotationMembers: assignmentType === "ROTATING" ? rotationMembers : undefined,
-      });
+        startDate: startDate?.toISOString(),
+        dueDate: scheduleMode === "MANUAL" ? dueDate?.toISOString() : undefined,
+        timeTracked: scheduleMode === "TIMER",
+      };
+      if (isEditing) {
+        await api.updateTask(trip.id, task!.id, { ...payload, assignedToId: assignmentType === "MANUAL" ? assignedToId : undefined });
+      } else {
+        await api.createTask(trip.id, {
+          ...payload,
+          assignmentType,
+          assignedToId: assignmentType === "MANUAL" ? assignedToId : undefined,
+          rotationMembers: assignmentType === "ROTATING" ? rotationMembers : undefined,
+        });
+      }
       navigation.goBack();
     } catch (e: any) {
       Alert.alert("No se pudo guardar", e.message);
@@ -56,7 +71,7 @@ export function NewTaskScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Tarea nueva</Text>
+        <Text style={styles.title}>{isEditing ? "Editar tarea" : "Tarea nueva"}</Text>
 
         <View>
           <Text style={styles.label}>Título</Text>
@@ -64,42 +79,77 @@ export function NewTaskScreen({ navigation }: any) {
         </View>
 
         <View>
-          <Text style={styles.label}>Fecha (opcional)</Text>
-          <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
-            <Text style={styles.dateText}>{dueDate ? formatShort(dueDate) : "Elegir fecha"}</Text>
-          </TouchableOpacity>
+          <Text style={styles.label}>¿Cómo querés controlar el tiempo?</Text>
+          <View style={styles.tabs}>
+            <TouchableOpacity style={[styles.tab, scheduleMode === "MANUAL" && styles.tabActive]} onPress={() => setScheduleMode("MANUAL")}>
+              <Text style={[styles.tabText, scheduleMode === "MANUAL" && styles.tabTextActive]}>Fechas manuales</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.tab, scheduleMode === "TIMER" && styles.tabActive]} onPress={() => setScheduleMode("TIMER")}>
+              <Text style={[styles.tabText, scheduleMode === "TIMER" && styles.tabTextActive]}>Cronómetro</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {scheduleMode === "MANUAL" ? (
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Inicio (opcional)</Text>
+              <TouchableOpacity style={styles.input} onPress={() => setShowPicker("start")}>
+                <Text style={styles.dateText}>{startDate ? formatShort(startDate) : "Elegir"}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Fin</Text>
+              <TouchableOpacity style={styles.input} onPress={() => setShowPicker("due")}>
+                <Text style={styles.dateText}>{dueDate ? formatShort(dueDate) : "Elegir"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View>
+            <Text style={styles.label}>Inicio</Text>
+            <TouchableOpacity style={styles.input} onPress={() => setShowPicker("start")}>
+              <Text style={styles.dateText}>{startDate ? formatShort(startDate) : "Ahora"}</Text>
+            </TouchableOpacity>
+            <Text style={styles.helper}>Al marcarla como hecha vas a ver cuánto tiempo llevó.</Text>
+          </View>
+        )}
+
         {showPicker && (
           <DateTimePicker
-            value={dueDate ?? new Date()}
+            value={(showPicker === "start" ? startDate : dueDate) ?? new Date()}
             mode="date"
             display={Platform.OS === "ios" ? "inline" : "default"}
             onChange={(_event, date) => {
-              if (Platform.OS === "android") setShowPicker(false);
-              if (date) setDueDate(date);
+              if (Platform.OS === "android") setShowPicker(null);
+              if (!date) return;
+              if (showPicker === "start") setStartDate(date);
+              else setDueDate(date);
             }}
           />
         )}
         {showPicker && Platform.OS === "ios" && (
-          <TouchableOpacity style={styles.doneButton} onPress={() => setShowPicker(false)}>
+          <TouchableOpacity style={styles.doneButton} onPress={() => setShowPicker(null)}>
             <Text style={styles.doneText}>Listo</Text>
           </TouchableOpacity>
         )}
 
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tab, assignmentType === "MANUAL" && styles.tabActive]}
-            onPress={() => setAssignmentType("MANUAL")}
-          >
-            <Text style={[styles.tabText, assignmentType === "MANUAL" && styles.tabTextActive]}>Asignación manual</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, assignmentType === "ROTATING" && styles.tabActive]}
-            onPress={() => setAssignmentType("ROTATING")}
-          >
-            <Text style={[styles.tabText, assignmentType === "ROTATING" && styles.tabTextActive]}>Turno rotativo</Text>
-          </TouchableOpacity>
-        </View>
+        {!isEditing && (
+          <View style={styles.tabs}>
+            <TouchableOpacity
+              style={[styles.tab, assignmentType === "MANUAL" && styles.tabActive]}
+              onPress={() => setAssignmentType("MANUAL")}
+            >
+              <Text style={[styles.tabText, assignmentType === "MANUAL" && styles.tabTextActive]}>Asignación manual</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, assignmentType === "ROTATING" && styles.tabActive]}
+              onPress={() => setAssignmentType("ROTATING")}
+            >
+              <Text style={[styles.tabText, assignmentType === "ROTATING" && styles.tabTextActive]}>Turno rotativo</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {assignmentType === "MANUAL" ? (
           <View>
@@ -116,7 +166,7 @@ export function NewTaskScreen({ navigation }: any) {
               ))}
             </View>
           </View>
-        ) : (
+        ) : !isEditing ? (
           <View>
             <Text style={styles.label}>Integrantes del turno</Text>
             <View style={styles.chipsRow}>
@@ -133,10 +183,12 @@ export function NewTaskScreen({ navigation }: any) {
               ))}
             </View>
           </View>
+        ) : (
+          <Text style={styles.helper}>Es un turno rotativo — el orden de integrantes no se puede editar acá, solo título y fechas.</Text>
         )}
 
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={submitting}>
-          <Text style={styles.submitText}>{submitting ? "Guardando..." : "Guardar tarea"}</Text>
+          <Text style={styles.submitText}>{submitting ? "Guardando..." : isEditing ? "Guardar cambios" : "Guardar tarea"}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -147,7 +199,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, gap: 14 },
   title: { fontSize: 18, fontWeight: "700", color: colors.text },
+  row: { flexDirection: "row", gap: 10 },
   label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },
+  helper: { fontSize: 11, color: colors.muted, marginTop: 4 },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: "white", justifyContent: "center" },
   dateText: { fontSize: 14, color: colors.text },
   doneButton: { alignSelf: "flex-end", padding: 8 },

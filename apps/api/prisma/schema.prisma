@@ -195,7 +195,13 @@ model Task {
   assignedTo     User?          @relation("TaskAssignee", fields: [assignedToId], references: [id])
   rotationGroupId String?       @map("rotation_group_id")
   rotationGroup  RotationGroup? @relation(fields: [rotationGroupId], references: [id])
+  // Modo manual: se pueden fijar startDate y/o dueDate como fechas de referencia.
+  // Modo cronómetro (timeTracked): solo importa startDate — el tiempo insumido se
+  // calcula al completar la tarea (o cada turno, si es rotativa) y queda guardado
+  // en TaskCompletion.durationSeconds.
+  startDate      DateTime?      @map("start_date")
   dueDate        DateTime?      @map("due_date")
+  timeTracked    Boolean        @default(false) @map("time_tracked")
   status         TaskStatus     @default(PENDING)
   createdById    String         @map("created_by")
   createdBy      User           @relation("TaskCreator", fields: [createdById], references: [id])
@@ -227,6 +233,7 @@ model TaskCompletion {
   completedById String @map("completed_by")
   completedBy User     @relation(fields: [completedById], references: [id])
   completedAt DateTime @default(now()) @map("completed_at")
+  durationSeconds Int? @map("duration_seconds")
 
   @@map("task_completions")
 }

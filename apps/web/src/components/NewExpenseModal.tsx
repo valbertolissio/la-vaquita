@@ -1,23 +1,27 @@
 import { useState } from "react";
 import { X, Camera } from "lucide-react";
 import { api } from "../lib/api";
-import { Trip } from "../lib/types";
+import { Expense, Trip } from "../lib/types";
 import { avatarColor, initials } from "../lib/format";
 
 interface Props {
   tripId: string;
   trip: Trip;
+  expense?: Expense;
   onClose: () => void;
   onCreated: () => void;
 }
 
-export function NewExpenseModal({ tripId, trip, onClose, onCreated }: Props) {
+export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: Props) {
+  const isEditing = !!expense;
   const [tab, setTab] = useState<"manual" | "ocr">("manual");
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
-  const [categoryId, setCategoryId] = useState(trip.categories[0]?.id ?? "");
-  const [paidById, setPaidById] = useState(trip.members[0]?.userId ?? "");
-  const [splitBetween, setSplitBetween] = useState<string[]>(trip.members.map((m) => m.userId));
+  const [description, setDescription] = useState(expense?.description ?? "");
+  const [amount, setAmount] = useState(expense ? String(expense.amount) : "");
+  const [categoryId, setCategoryId] = useState(expense?.category?.id ?? trip.categories[0]?.id ?? "");
+  const [paidById, setPaidById] = useState(expense?.paidBy.id ?? trip.members[0]?.userId ?? "");
+  const [splitBetween, setSplitBetween] = useState<string[]>(
+    expense ? expense.splits.map((s) => s.userId) : trip.members.map((m) => m.userId)
+  );
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -34,14 +38,19 @@ export function NewExpenseModal({ tripId, trip, onClose, onCreated }: Props) {
     }
     setSubmitting(true);
     try {
-      await api.createExpense(tripId, {
+      const payload = {
         description,
         amount: Number(amount),
         categoryId: categoryId || undefined,
         paidById,
         splitBetween,
         notes: notes || undefined,
-      });
+      };
+      if (isEditing) {
+        await api.updateExpense(tripId, expense!.id, payload);
+      } else {
+        await api.createExpense(tripId, payload);
+      }
       onCreated();
     } catch (e: any) {
       setError(e.message);
@@ -54,26 +63,28 @@ export function NewExpenseModal({ tripId, trip, onClose, onCreated }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-800">Gasto nuevo</h3>
+          <h3 className="text-lg font-semibold text-slate-800">{isEditing ? "Editar gasto" : "Gasto nuevo"}</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X size={18} strokeWidth={2} />
           </button>
         </div>
 
-        <div className="mb-4 flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
-          <button
-            onClick={() => setTab("manual")}
-            className={`flex-1 rounded-md py-1.5 ${tab === "manual" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
-          >
-            Manual
-          </button>
-          <button
-            onClick={() => setTab("ocr")}
-            className={`flex-1 rounded-md py-1.5 ${tab === "ocr" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
-          >
-            Con comprobante (OCR)
-          </button>
-        </div>
+        {!isEditing && (
+          <div className="mb-4 flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
+            <button
+              onClick={() => setTab("manual")}
+              className={`flex-1 rounded-md py-1.5 ${tab === "manual" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+            >
+              Manual
+            </button>
+            <button
+              onClick={() => setTab("ocr")}
+              className={`flex-1 rounded-md py-1.5 ${tab === "ocr" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+            >
+              Con comprobante (OCR)
+            </button>
+          </div>
+        )}
 
         {tab === "ocr" ? (
           <div className="mb-4 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 py-10 text-center text-slate-500">
@@ -174,7 +185,7 @@ export function NewExpenseModal({ tripId, trip, onClose, onCreated }: Props) {
               disabled={submitting}
               className="mt-2 w-full rounded-lg bg-vaquita-green py-2.5 text-sm font-semibold text-white hover:bg-vaquita-greenDark disabled:opacity-60"
             >
-              {submitting ? "Guardando..." : "Guardar gasto"}
+              {submitting ? "Guardando..." : isEditing ? "Guardar cambios" : "Guardar gasto"}
             </button>
           </div>
         )}

@@ -6,14 +6,20 @@ import { Feather } from "@expo/vector-icons";
 import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { colors } from "../lib/theme";
+import { Expense } from "../lib/types";
 
-export function NewExpenseScreen({ navigation }: any) {
+export function NewExpenseScreen({ navigation, route }: any) {
   const { trip } = useTrip();
+  const expense: Expense | undefined = route?.params?.expense;
+  const isEditing = !!expense;
+
   const [tab, setTab] = useState<"manual" | "ocr">("manual");
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
-  const [paidById, setPaidById] = useState(trip?.members[0]?.userId ?? "");
-  const [splitBetween, setSplitBetween] = useState<string[]>(trip?.members.map((m) => m.userId) ?? []);
+  const [description, setDescription] = useState(expense?.description ?? "");
+  const [amount, setAmount] = useState(expense ? String(expense.amount) : "");
+  const [paidById, setPaidById] = useState(expense?.paidBy.id ?? trip?.members[0]?.userId ?? "");
+  const [splitBetween, setSplitBetween] = useState<string[]>(
+    expense ? expense.splits.map((s) => s.userId) : trip?.members.map((m) => m.userId) ?? []
+  );
   const [notes, setNotes] = useState("");
   const [receiptUri, setReceiptUri] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -45,13 +51,18 @@ export function NewExpenseScreen({ navigation }: any) {
     }
     setSubmitting(true);
     try {
-      await api.createExpense(trip.id, {
+      const payload = {
         description,
         amount: Number(amount),
         paidById,
         splitBetween,
         notes: notes || undefined,
-      });
+      };
+      if (isEditing) {
+        await api.updateExpense(trip.id, expense!.id, payload);
+      } else {
+        await api.createExpense(trip.id, payload);
+      }
       navigation.goBack();
     } catch (e: any) {
       Alert.alert("No se pudo guardar", e.message);
@@ -63,16 +74,18 @@ export function NewExpenseScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
-        <Text style={styles.title}>Gasto nuevo</Text>
+        <Text style={styles.title}>{isEditing ? "Editar gasto" : "Gasto nuevo"}</Text>
 
-        <View style={styles.tabs}>
-          <TouchableOpacity style={[styles.tab, tab === "manual" && styles.tabActive]} onPress={() => setTab("manual")}>
-            <Text style={[styles.tabText, tab === "manual" && styles.tabTextActive]}>Manual</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.tab, tab === "ocr" && styles.tabActive]} onPress={() => setTab("ocr")}>
-            <Text style={[styles.tabText, tab === "ocr" && styles.tabTextActive]}>Con comprobante (OCR)</Text>
-          </TouchableOpacity>
-        </View>
+        {!isEditing && (
+          <View style={styles.tabs}>
+            <TouchableOpacity style={[styles.tab, tab === "manual" && styles.tabActive]} onPress={() => setTab("manual")}>
+              <Text style={[styles.tabText, tab === "manual" && styles.tabTextActive]}>Manual</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.tab, tab === "ocr" && styles.tabActive]} onPress={() => setTab("ocr")}>
+              <Text style={[styles.tabText, tab === "ocr" && styles.tabTextActive]}>Con comprobante (OCR)</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {tab === "ocr" ? (
           <TouchableOpacity style={styles.dropzone} onPress={pickReceipt}>
@@ -135,7 +148,7 @@ export function NewExpenseScreen({ navigation }: any) {
             </View>
 
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={submitting}>
-              <Text style={styles.submitText}>{submitting ? "Guardando..." : "Guardar gasto"}</Text>
+              <Text style={styles.submitText}>{submitting ? "Guardando..." : isEditing ? "Guardar cambios" : "Guardar gasto"}</Text>
             </TouchableOpacity>
           </>
         )}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Plus, Trash2, UtensilsCrossed, Car, Home, PartyPopper, Receipt, LucideIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, UtensilsCrossed, Car, Home, PartyPopper, Receipt, LucideIcon } from "lucide-react";
 import { api } from "../lib/api";
 import { Expense, Trip } from "../lib/types";
 import { formatDate, formatMoney } from "../lib/format";
@@ -19,6 +19,7 @@ export function Expenses() {
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
   const [trip, setTrip] = useState<Trip | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   function reload() {
@@ -89,15 +90,20 @@ export function Expenses() {
                   <td className="px-4 py-3 text-slate-500">{e.paidBy.name}</td>
                   <td className="px-4 py-3 text-slate-500">{formatDate(e.expenseDate)}</td>
                   <td className="px-4 py-3 text-right font-semibold text-slate-800">{formatMoney(e.amount)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleDelete(e.id)}
-                      disabled={deletingId === e.id}
-                      className="text-slate-300 opacity-0 transition hover:text-red-500 disabled:opacity-100 group-hover:opacity-100"
-                      title="Eliminar gasto"
-                    >
-                      <Trash2 size={15} strokeWidth={2} />
-                    </button>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-3 opacity-0 transition group-hover:opacity-100">
+                      <button onClick={() => setEditingExpense(e)} className="text-slate-300 hover:text-slate-600" title="Editar gasto">
+                        <Pencil size={15} strokeWidth={2} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(e.id)}
+                        disabled={deletingId === e.id}
+                        className="text-slate-300 hover:text-red-500 disabled:opacity-60"
+                        title="Eliminar gasto"
+                      >
+                        <Trash2 size={15} strokeWidth={2} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -120,6 +126,18 @@ export function Expenses() {
           onClose={() => setShowModal(false)}
           onCreated={() => {
             setShowModal(false);
+            reload();
+          }}
+        />
+      )}
+      {editingExpense && trip && tripId && (
+        <NewExpenseModal
+          tripId={tripId}
+          trip={trip}
+          expense={editingExpense}
+          onClose={() => setEditingExpense(null)}
+          onCreated={() => {
+            setEditingExpense(null);
             reload();
           }}
         />

@@ -10,6 +10,20 @@ export function formatDate(date: string | Date) {
   return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(new Date(date));
 }
 
+export function formatDuration(totalSeconds: number) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.round((totalSeconds % 3600) / 60);
+  if (h === 0 && m === 0) return "menos de 1 min";
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h} h`;
+  return `${h} h ${m} min`;
+}
+
+/** Segundos transcurridos desde una fecha ISO hasta ahora — para cronómetros en vivo. */
+export function secondsSince(isoDate: string) {
+  return Math.max(0, Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000));
+}
+
 export function initials(name: string) {
   return name
     .split(" ")

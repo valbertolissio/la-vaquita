@@ -57,6 +57,7 @@ export function ExpensesScreen({ navigation }: any) {
           <Text style={styles.addButtonText}> Gasto</Text>
         </TouchableOpacity>
       </View>
+      {expenses && expenses.length > 0 && <Text style={styles.hint}>Tocá un gasto para editarlo, mantené presionado para eliminarlo.</Text>}
       <FlatList
         data={expenses ?? []}
         keyExtractor={(e) => e.id}
@@ -69,7 +70,11 @@ export function ExpensesScreen({ navigation }: any) {
           )
         }
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onLongPress={() => confirmDelete(item)}>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate("Gasto nuevo", { expense: item })}
+            onLongPress={() => confirmDelete(item)}
+          >
             <View style={styles.categoryIconWrap}>
               <Feather name={CATEGORY_ICONS[item.category?.name ?? "Otros"] ?? "tag"} size={16} color={colors.muted} />
             </View>
@@ -97,6 +102,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: "700", color: colors.text },
   addButton: { flexDirection: "row", alignItems: "center", backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   addButtonText: { color: "white", fontWeight: "600", fontSize: 12 },
+  hint: { fontSize: 11, color: colors.muted, paddingHorizontal: 16 },
   card: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "white", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border },
   categoryIconWrap: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" },
   cardTitle: { fontWeight: "600", color: colors.text },
