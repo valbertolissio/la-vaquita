@@ -23,7 +23,6 @@ export function Sidebar() {
         </div>
         <div>
           <p className="font-display text-lg font-bold leading-none">La Vaquita</p>
-          <p className="text-xs text-white/60">Menos cuentas. Más viaje.</p>
         </div>
       </div>
 
@@ -50,7 +49,7 @@ export function Sidebar() {
           onClick={() => navigate("/trips")}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white"
         >
-          <Plane size={18} strokeWidth={2} /> Viajes
+          <Plane size={18} strokeWidth={2} /> Proyectos
         </button>
         <button
           onClick={logout}

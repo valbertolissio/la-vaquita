@@ -7,6 +7,7 @@ import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { colors } from "../lib/theme";
 import { Expense } from "../lib/types";
+import { displayName } from "../lib/format";
 
 export function NewExpenseScreen({ navigation, route }: any) {
   const { trip } = useTrip();
@@ -121,7 +122,7 @@ export function NewExpenseScreen({ navigation, route }: any) {
                     style={[styles.chip, paidById === m.userId && styles.chipActive]}
                     onPress={() => setPaidById(m.userId)}
                   >
-                    <Text style={[styles.chipText, paidById === m.userId && styles.chipTextActive]}>{m.user.name}</Text>
+                    <Text style={[styles.chipText, paidById === m.userId && styles.chipTextActive]}>{displayName(m.user)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -136,7 +137,7 @@ export function NewExpenseScreen({ navigation, route }: any) {
                     style={[styles.chip, splitBetween.includes(m.userId) && styles.chipActive]}
                     onPress={() => toggleMember(m.userId)}
                   >
-                    <Text style={[styles.chipText, splitBetween.includes(m.userId) && styles.chipTextActive]}>{m.user.name}</Text>
+                    <Text style={[styles.chipText, splitBetween.includes(m.userId) && styles.chipTextActive]}>{displayName(m.user)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>

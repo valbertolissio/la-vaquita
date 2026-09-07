@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { Plus, Pencil, Trash2, UtensilsCrossed, Car, Home, PartyPopper, Receipt, LucideIcon } from "lucide-react";
 import { api } from "../lib/api";
 import { Expense, Trip } from "../lib/types";
-import { formatDate, formatMoney } from "../lib/format";
+import { displayName, formatDate, formatMoney } from "../lib/format";
 import { NewExpenseModal } from "../components/NewExpenseModal";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
@@ -87,7 +87,7 @@ export function Expenses() {
                       {e.category?.name ?? "Otros"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-500">{e.paidBy.name}</td>
+                  <td className="px-4 py-3 text-slate-500">{displayName(e.paidBy)}</td>
                   <td className="px-4 py-3 text-slate-500">{formatDate(e.expenseDate)}</td>
                   <td className="px-4 py-3 text-right font-semibold text-slate-800">{formatMoney(e.amount)}</td>
                   <td className="px-4 py-3">

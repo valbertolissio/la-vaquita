@@ -40,7 +40,7 @@ export function AcceptInvite() {
             <p className="mt-1 text-sm text-slate-500">{error}</p>
           </>
         ) : (
-          <p className="mt-3 text-sm text-slate-500">Uniéndote al viaje...</p>
+          <p className="mt-3 text-sm text-slate-500">Uniéndote al proyecto...</p>
         )}
       </div>
     </div>

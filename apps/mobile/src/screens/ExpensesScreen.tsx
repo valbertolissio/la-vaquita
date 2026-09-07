@@ -7,7 +7,7 @@ import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { Expense } from "../lib/types";
 import { colors } from "../lib/theme";
-import { money, formatDate } from "../lib/format";
+import { money, formatDate, displayName } from "../lib/format";
 import { Avatar } from "../components/Avatar";
 
 const CATEGORY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
@@ -81,8 +81,8 @@ export function ExpensesScreen({ navigation }: any) {
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{item.description}</Text>
               <View style={styles.paidByRow}>
-                <Avatar userId={item.paidBy.id} name={item.paidBy.name} size={16} />
-                <Text style={styles.cardSub}> Pagó: {item.paidBy.name}</Text>
+                <Avatar userId={item.paidBy.id} name={displayName(item.paidBy)} color={item.paidBy.avatarColor} size={16} />
+                <Text style={styles.cardSub}> Pagó: {displayName(item.paidBy)}</Text>
               </View>
             </View>
             <View style={{ alignItems: "flex-end" }}>

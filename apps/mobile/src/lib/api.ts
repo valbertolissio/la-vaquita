@@ -40,6 +40,8 @@ export const api = {
   login: (data: { email: string; password: string }) =>
     request<{ token: string; user: any }>("/auth/login", { method: "POST", body: JSON.stringify(data) }),
   me: () => request<any>("/auth/me"),
+  updateMe: (data: { name?: string; nickname?: string | null; avatarColor?: string | null }) =>
+    request<any>("/auth/me", { method: "PATCH", body: JSON.stringify(data) }),
 
   listTrips: () => request<any[]>("/trips"),
   createTrip: (data: any) => request<any>("/trips", { method: "POST", body: JSON.stringify(data) }),

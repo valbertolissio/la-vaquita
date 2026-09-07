@@ -29,7 +29,6 @@ export function LoginScreen({ navigation }: any) {
           <Logo size={44} />
         </View>
         <Text style={styles.title}>La Vaquita</Text>
-        <Text style={styles.subtitle}>Menos cuentas. Más viaje.</Text>
 
         <TextInput
           style={styles.input}

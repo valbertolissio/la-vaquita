@@ -5,9 +5,10 @@ import { Sidebar } from "./Sidebar";
 import { api } from "../lib/api";
 import { Trip } from "../lib/types";
 import { useAuth } from "../context/AuthContext";
-import { avatarColor, initials } from "../lib/format";
+import { avatarColor, displayName, initials } from "../lib/format";
 import { InviteModal } from "./InviteModal";
 import { EditTripModal } from "./EditTripModal";
+import { EditProfileModal } from "./EditProfileModal";
 
 export function TripLayout() {
   const { tripId } = useParams();
@@ -18,6 +19,7 @@ export function TripLayout() {
   const [showEdit, setShowEdit] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     if (tripId) api.getTrip(tripId).then(setTrip);
@@ -98,7 +100,7 @@ export function TripLayout() {
                         }}
                         className="block w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
                       >
-                        Editar viaje
+                        Editar proyecto
                       </button>
                     )}
                     {isOrganizer && (
@@ -110,7 +112,7 @@ export function TripLayout() {
                         disabled={deleting}
                         className="block w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-red-50 disabled:opacity-60"
                       >
-                        {deleting ? "Eliminando..." : "Eliminar viaje"}
+                        {deleting ? "Eliminando..." : "Eliminar proyecto"}
                       </button>
                     )}
                   </div>
@@ -118,16 +120,19 @@ export function TripLayout() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700">
+            <button
+              onClick={() => setShowProfile(true)}
+              className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200"
+            >
               <span
                 className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${
-                  user ? `${avatarColor(user.id).bg} ${avatarColor(user.id).text}` : "bg-vaquita-green text-white"
+                  user ? `${avatarColor(user.id, user.avatarColor).bg} ${avatarColor(user.id, user.avatarColor).text}` : "bg-vaquita-green text-white"
                 }`}
               >
-                {user ? initials(user.name) : "?"}
+                {user ? initials(displayName(user)) : "?"}
               </span>
-              {user?.name}
-            </div>
+              {user ? displayName(user) : ""}
+            </button>
           </div>
         </header>
         <main className="p-8">
@@ -137,6 +142,7 @@ export function TripLayout() {
 
       {showInvite && tripId && <InviteModal tripId={tripId} onClose={() => setShowInvite(false)} />}
       {showEdit && trip && <EditTripModal trip={trip} onClose={() => setShowEdit(false)} onUpdated={setTrip} />}
+      {showProfile && <EditProfileModal onClose={() => setShowProfile(false)} />}
     </div>
   );
 }

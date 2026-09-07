@@ -15,6 +15,14 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
+const AVATAR_COLOR_KEYS = ["green", "navy", "blue", "orange", "purple", "rose", "teal", "amber"] as const;
+
+const updateMeSchema = z.object({
+  name: z.string().min(2, "El nombre es muy corto").optional(),
+  nickname: z.string().max(30).nullable().optional(),
+  avatarColor: z.enum(AVATAR_COLOR_KEYS).nullable().optional(),
+});
+
 export async function register(req: Request, res: Response) {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -35,7 +43,14 @@ export async function register(req: Request, res: Response) {
   const token = signToken({ userId: user.id });
   res.status(201).json({
     token,
-    user: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl },
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      nickname: user.nickname,
+      avatarColor: user.avatarColor,
+    },
   });
 }
 
@@ -59,15 +74,35 @@ export async function login(req: Request, res: Response) {
   const token = signToken({ userId: user.id });
   res.json({
     token,
-    user: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl },
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      nickname: user.nickname,
+      avatarColor: user.avatarColor,
+    },
   });
 }
 
 export async function me(req: Request & { userId?: string }, res: Response) {
   const user = await prisma.user.findUnique({
     where: { id: req.userId },
-    select: { id: true, name: true, email: true, avatarUrl: true, createdAt: true },
+    select: { id: true, name: true, email: true, avatarUrl: true, nickname: true, avatarColor: true, createdAt: true },
   });
   if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+  res.json(user);
+}
+
+export async function updateMe(req: Request & { userId?: string }, res: Response) {
+  const parsed = updateMeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
+  }
+  const user = await prisma.user.update({
+    where: { id: req.userId },
+    data: parsed.data,
+    select: { id: true, name: true, email: true, avatarUrl: true, nickname: true, avatarColor: true },
+  });
   res.json(user);
 }

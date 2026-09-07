@@ -23,7 +23,7 @@ export function EditTripScreen({ navigation }: any) {
   async function handleSave() {
     if (!trip) return;
     if (!name.trim()) {
-      Alert.alert("Faltan datos", "Ponele un nombre al viaje.");
+      Alert.alert("Faltan datos", "Ponele un nombre al proyecto.");
       return;
     }
     if (endDate < startDate) {
@@ -49,10 +49,10 @@ export function EditTripScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Editar viaje</Text>
+        <Text style={styles.title}>Editar proyecto</Text>
 
         <View>
-          <Text style={styles.label}>Nombre del viaje</Text>
+          <Text style={styles.label}>Nombre del proyecto</Text>
           <TextInput style={styles.input} value={name} onChangeText={setName} />
         </View>
 

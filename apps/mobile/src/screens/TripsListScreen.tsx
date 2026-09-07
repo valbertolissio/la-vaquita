@@ -30,16 +30,16 @@ export function TripsListScreen({ navigation }: any) {
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <Logo size={26} />
-          <Text style={styles.title}>Tus viajes</Text>
+          <Text style={styles.title}>Tus proyectos</Text>
         </View>
         <TouchableOpacity onPress={logout}>
           <Text style={styles.logout}>Salir</Text>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.newTripButton} onPress={() => navigation.navigate("Nuevo viaje")}>
+      <TouchableOpacity style={styles.newTripButton} onPress={() => navigation.navigate("Nuevo proyecto")}>
         <Feather name="plus" size={16} color="white" />
-        <Text style={styles.newTripText}>Nuevo viaje</Text>
+        <Text style={styles.newTripText}>Nuevo proyecto</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -48,9 +48,9 @@ export function TripsListScreen({ navigation }: any) {
         contentContainerStyle={{ padding: 16, gap: 10 }}
         ListEmptyComponent={
           trips === null ? (
-            <Text style={styles.empty}>Cargando tus viajes...</Text>
+            <Text style={styles.empty}>Cargando tus proyectos...</Text>
           ) : (
-            <Text style={styles.empty}>Todavía no tenés viajes creados.</Text>
+            <Text style={styles.empty}>Todavía no tenés proyectos creados.</Text>
           )
         }
         renderItem={({ item }) => (

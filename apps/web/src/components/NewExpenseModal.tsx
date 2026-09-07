@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X, Camera } from "lucide-react";
 import { api } from "../lib/api";
 import { Expense, Trip } from "../lib/types";
-import { avatarColor, initials } from "../lib/format";
+import { avatarColor, displayName, initials } from "../lib/format";
 
 interface Props {
   tripId: string;
@@ -138,7 +138,7 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
               >
                 {trip.members.map((m) => (
                   <option key={m.userId} value={m.userId}>
-                    {m.user.name}
+                    {displayName(m.user)}
                   </option>
                 ))}
               </select>
@@ -147,7 +147,7 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
               <label className="text-xs font-medium text-slate-500">¿Entre quiénes se divide?</label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {trip.members.map((m) => {
-                  const color = avatarColor(m.userId);
+                  const color = avatarColor(m.userId, m.user.avatarColor);
                   return (
                     <button
                       key={m.userId}
@@ -160,9 +160,9 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
                       }`}
                     >
                       <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${color.bg} ${color.text}`}>
-                        {initials(m.user.name)}
+                        {initials(displayName(m.user))}
                       </span>
-                      {m.user.name}
+                      {displayName(m.user)}
                     </button>
                   );
                 })}

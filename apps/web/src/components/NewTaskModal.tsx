@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { api } from "../lib/api";
 import { Task, Trip } from "../lib/types";
+import { displayName } from "../lib/format";
 
 interface Props {
   tripId: string;
@@ -169,7 +170,7 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
               >
                 {trip.members.map((m) => (
                   <option key={m.userId} value={m.userId}>
-                    {m.user.name}
+                    {displayName(m.user)}
                   </option>
                 ))}
               </select>
@@ -189,7 +190,7 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
                         : "border-slate-300 text-slate-500"
                     }`}
                   >
-                    {m.user.name}
+                    {displayName(m.user)}
                   </button>
                 ))}
               </div>

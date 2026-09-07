@@ -4,6 +4,7 @@ export interface MemberBalance {
   userId: string;
   name: string;
   avatarUrl: string | null;
+  avatarColor: string | null;
   paid: number;
   owed: number;
   balance: number; // positivo = le deben, negativo = debe
@@ -29,8 +30,9 @@ export async function computeTripBalances(tripId: string): Promise<MemberBalance
   for (const m of members) {
     balances.set(m.userId, {
       userId: m.userId,
-      name: m.user.name,
+      name: m.user.nickname || m.user.name,
       avatarUrl: m.user.avatarUrl,
+      avatarColor: m.user.avatarColor,
       paid: 0,
       owed: 0,
       balance: 0,
@@ -59,8 +61,10 @@ export async function computeTripBalances(tripId: string): Promise<MemberBalance
 export interface Settlement {
   fromUserId: string;
   fromName: string;
+  fromAvatarColor: string | null;
   toUserId: string;
   toName: string;
+  toAvatarColor: string | null;
   amount: number;
 }
 
@@ -68,11 +72,11 @@ export interface Settlement {
 export function simplifyDebts(balances: MemberBalance[]): Settlement[] {
   const debtors = balances
     .filter((b) => b.balance < -0.01)
-    .map((b) => ({ userId: b.userId, name: b.name, amount: -b.balance }))
+    .map((b) => ({ userId: b.userId, name: b.name, avatarColor: b.avatarColor, amount: -b.balance }))
     .sort((a, b) => b.amount - a.amount);
   const creditors = balances
     .filter((b) => b.balance > 0.01)
-    .map((b) => ({ userId: b.userId, name: b.name, amount: b.balance }))
+    .map((b) => ({ userId: b.userId, name: b.name, avatarColor: b.avatarColor, amount: b.balance }))
     .sort((a, b) => b.amount - a.amount);
 
   const settlements: Settlement[] = [];
@@ -87,8 +91,10 @@ export function simplifyDebts(balances: MemberBalance[]): Settlement[] {
       settlements.push({
         fromUserId: debtor.userId,
         fromName: debtor.name,
+        fromAvatarColor: debtor.avatarColor,
         toUserId: creditor.userId,
         toName: creditor.name,
+        toAvatarColor: creditor.avatarColor,
         amount,
       });
     }

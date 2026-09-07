@@ -20,7 +20,7 @@ export function NewTripScreen({ navigation }: any) {
 
   async function handleCreate() {
     if (!name.trim()) {
-      Alert.alert("Faltan datos", "Ponele un nombre al viaje.");
+      Alert.alert("Faltan datos", "Ponele un nombre al proyecto.");
       return;
     }
     if (endDate < startDate) {
@@ -36,7 +36,7 @@ export function NewTripScreen({ navigation }: any) {
       });
       setTrip(trip);
     } catch (e: any) {
-      Alert.alert("No se pudo crear el viaje", e.message);
+      Alert.alert("No se pudo crear el proyecto", e.message);
     } finally {
       setSubmitting(false);
     }
@@ -45,10 +45,10 @@ export function NewTripScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Nuevo viaje</Text>
+        <Text style={styles.title}>Nuevo proyecto</Text>
 
         <View>
-          <Text style={styles.label}>Nombre del viaje</Text>
+          <Text style={styles.label}>Nombre del proyecto</Text>
           <TextInput style={styles.input} placeholder="Bariloche 2025" value={name} onChangeText={setName} />
         </View>
 
@@ -87,7 +87,7 @@ export function NewTripScreen({ navigation }: any) {
         )}
 
         <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={submitting}>
-          <Text style={styles.buttonText}>{submitting ? "Creando..." : "Crear viaje"}</Text>
+          <Text style={styles.buttonText}>{submitting ? "Creando..." : "Crear proyecto"}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
           <Text style={styles.cancelText}>Cancelar</Text>

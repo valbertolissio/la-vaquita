@@ -4,15 +4,16 @@ import { avatarColor, initials } from "../lib/format";
 interface AvatarProps {
   userId: string;
   name: string;
+  color?: string | null;
   size?: number;
 }
 
-export function Avatar({ userId, name, size = 32 }: AvatarProps) {
+export function Avatar({ userId, name, color, size = 32 }: AvatarProps) {
   return (
     <View
       style={[
         styles.circle,
-        { width: size, height: size, borderRadius: size / 2, backgroundColor: avatarColor(userId) },
+        { width: size, height: size, borderRadius: size / 2, backgroundColor: avatarColor(userId, color) },
       ]}
     >
       <Text style={[styles.text, { fontSize: size * 0.38 }]}>{initials(name)}</Text>

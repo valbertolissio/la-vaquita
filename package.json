@@ -2,7 +2,7 @@
   "name": "la-vaquita",
   "private": true,
   "version": "1.0.0",
-  "description": "La Vaquita - Menos cuentas. Más viaje. Gestion colaborativa de gastos y tareas en viajes grupales.",
+  "description": "La Vaquita - Gestion colaborativa de gastos y tareas en proyectos grupales.",
   "workspaces": [
     "apps/api",
     "apps/web",

@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { Plus, Pencil, Trash2, Repeat, Clock } from "lucide-react";
 import { api } from "../lib/api";
 import { Task, Trip } from "../lib/types";
-import { formatDate, formatDuration } from "../lib/format";
+import { displayName, formatDate, formatDuration } from "../lib/format";
 import { NewTaskModal } from "../components/NewTaskModal";
 import { LiveTimer } from "../components/LiveTimer";
 
@@ -88,7 +88,7 @@ export function Tasks() {
               <div className="flex-1">
                 <p className={`font-medium ${t.status === "DONE" ? "text-slate-400 line-through" : "text-slate-800"}`}>{t.title}</p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                  <span>Asignada a: {t.assignedTo?.name ?? "Sin asignar"}</span>
+                  <span>Asignada a: {t.assignedTo ? displayName(t.assignedTo) : "Sin asignar"}</span>
                   {t.assignmentType === "ROTATING" && (
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-vaquita-green/10 px-1.5 py-0.5 font-medium text-vaquita-greenDark">
                       <Repeat size={10} strokeWidth={2.5} /> Turno rotativo

@@ -30,7 +30,7 @@ export function RegisterScreen({ navigation }: any) {
           <Logo size={44} />
         </View>
         <Text style={styles.title}>Creá tu cuenta</Text>
-        <Text style={styles.subtitle}>Organizá tu próximo viaje grupal</Text>
+        <Text style={styles.subtitle}>Organizá tu próximo proyecto grupal</Text>
 
         <TextInput style={styles.input} placeholder="Nombre" value={name} onChangeText={setName} />
         <TextInput

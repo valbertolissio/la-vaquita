@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import { api } from "../lib/api";
 import { Trip, TripSummary } from "../lib/types";
-import { avatarColor, formatMoney, initials } from "../lib/format";
+import { avatarColor, displayName, formatMoney, initials } from "../lib/format";
 import { InviteModal } from "../components/InviteModal";
 
 export function Participants() {
@@ -23,7 +23,7 @@ export function Participants() {
       <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div>
           <h2 className="font-semibold text-slate-800">Participantes</h2>
-          <p className="text-sm text-slate-500">Invitá a más gente a sumarse a este viaje.</p>
+          <p className="text-sm text-slate-500">Invitá a más gente a sumarse a este proyecto.</p>
         </div>
         <button
           onClick={() => setShowInvite(true)}
@@ -38,15 +38,15 @@ export function Participants() {
         <div className="divide-y divide-slate-100">
           {trip?.members.map((m) => {
             const balance = summary?.balances.find((b) => b.userId === m.userId);
-            const color = avatarColor(m.userId);
+            const color = avatarColor(m.userId, m.user.avatarColor);
             return (
               <div key={m.id} className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
                   <span className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold ${color.bg} ${color.text}`}>
-                    {initials(m.user.name)}
+                    {initials(displayName(m.user))}
                   </span>
                   <div>
-                    <p className="font-medium text-slate-800">{m.user.name}</p>
+                    <p className="font-medium text-slate-800">{displayName(m.user)}</p>
                     <p className="text-xs text-slate-400">{m.role === "ORGANIZER" ? "Organizador/a" : "Integrante"}</p>
                   </div>
                 </div>

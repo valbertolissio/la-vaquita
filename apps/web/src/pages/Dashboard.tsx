@@ -18,7 +18,9 @@ import {
 import { api } from "../lib/api";
 import { TripSummary } from "../lib/types";
 import { StatCard } from "../components/StatCard";
-import { avatarColor, formatDate, formatDuration, formatMoney, initials } from "../lib/format";
+import { BalanceDetailModal } from "../components/BalanceDetailModal";
+import { useAuth } from "../context/AuthContext";
+import { avatarColor, displayName, formatDate, formatDuration, formatMoney, initials } from "../lib/format";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Alimentación: UtensilsCrossed,
@@ -30,7 +32,9 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 
 export function Dashboard() {
   const { tripId } = useParams();
+  const { user } = useAuth();
   const [summary, setSummary] = useState<TripSummary | null>(null);
+  const [showBalanceDetail, setShowBalanceDetail] = useState(false);
 
   function reload() {
     if (tripId) api.getSummary(tripId).then(setSummary);
@@ -48,17 +52,44 @@ export function Dashboard() {
 
   const totalTimeSeconds = summary.timeByParticipant.reduce((s, p) => s + p.totalSeconds, 0);
 
+  const balancePositive = summary.myBalance >= 0;
+
   return (
     <div className="space-y-6">
+      <button
+        onClick={() => setShowBalanceDetail(true)}
+        className={`flex w-full items-center justify-between rounded-2xl border-2 p-6 text-left shadow-sm transition hover:shadow-md ${
+          balancePositive ? "border-vaquita-green/40 bg-vaquita-green/5" : "border-red-300/50 bg-red-50"
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <span
+            className={`flex h-14 w-14 items-center justify-center rounded-full ${
+              balancePositive ? "bg-vaquita-green/15 text-vaquita-greenDark" : "bg-red-100 text-red-500"
+            }`}
+          >
+            <PiggyBank size={26} strokeWidth={2} />
+          </span>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Tu saldo</p>
+            <p className={`font-display text-4xl font-bold ${balancePositive ? "text-vaquita-greenDark" : "text-red-500"}`}>
+              {balancePositive ? "+" : ""}
+              {formatMoney(summary.myBalance)}
+            </p>
+            <p className="mt-0.5 text-xs text-slate-400">Ver el detalle →</p>
+          </div>
+        </div>
+        <span className={`rounded-full px-4 py-1.5 text-sm font-semibold ${balancePositive ? "bg-vaquita-green/15 text-vaquita-greenDark" : "bg-red-100 text-red-500"}`}>
+          {balancePositive ? "A tu favor" : "Debés"}
+        </span>
+      </button>
+
+      {showBalanceDetail && tripId && user && (
+        <BalanceDetailModal tripId={tripId} userId={user.id} onClose={() => setShowBalanceDetail(false)} />
+      )}
+
       <div className="flex gap-4">
         <StatCard icon={Wallet} label="Gasto total" value={formatMoney(summary.totalExpense)} sub={`${summary.expenseCount} gastos registrados`} />
-        <StatCard
-          icon={PiggyBank}
-          label="Tu saldo"
-          value={`${summary.myBalance >= 0 ? "+" : ""}${formatMoney(summary.myBalance)}`}
-          sub={summary.myBalance >= 0 ? "A tu favor" : "Debés"}
-          tone={summary.myBalance >= 0 ? "positive" : "negative"}
-        />
         <StatCard icon={Receipt} label="Pendiente total" value={formatMoney(summary.pendingTotal)} sub="Entre todos" />
         <StatCard icon={ClipboardList} label="Tareas pendientes" value={String(summary.pendingTaskCount)} sub={`Para hoy: ${summary.pendingTasks.length}`} />
       </div>
@@ -79,12 +110,12 @@ export function Dashboard() {
               {summary.settlements.map((s, i) => (
                 <li key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5 text-sm">
                   <span className="flex items-center gap-1.5 font-medium text-slate-700">
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(s.fromUserId).bg} ${avatarColor(s.fromUserId).text}`}>
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(s.fromUserId, s.fromAvatarColor).bg} ${avatarColor(s.fromUserId, s.fromAvatarColor).text}`}>
                       {initials(s.fromName)}
                     </span>
                     {s.fromName}
                     <ArrowRight size={13} className="text-slate-400" />
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(s.toUserId).bg} ${avatarColor(s.toUserId).text}`}>
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(s.toUserId, s.toAvatarColor).bg} ${avatarColor(s.toUserId, s.toAvatarColor).text}`}>
                       {initials(s.toName)}
                     </span>
                     {s.toName}
@@ -113,7 +144,7 @@ export function Dashboard() {
                   <li key={p.userId}>
                     <div className="mb-1 flex items-center justify-between text-sm">
                       <span className="flex items-center gap-1.5 font-medium text-slate-700">
-                        <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(p.userId).bg} ${avatarColor(p.userId).text}`}>
+                        <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(p.userId, p.avatarColor).bg} ${avatarColor(p.userId, p.avatarColor).text}`}>
                           {initials(p.name)}
                         </span>
                         {p.name}
@@ -139,7 +170,7 @@ export function Dashboard() {
               <div key={b.userId} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${avatarColor(b.userId).bg} ${avatarColor(b.userId).text}`}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${avatarColor(b.userId, b.avatarColor).bg} ${avatarColor(b.userId, b.avatarColor).text}`}
                   >
                     {initials(b.name)}
                   </span>
@@ -175,7 +206,7 @@ export function Dashboard() {
                   </span>
                   <div>
                     <p className="font-medium text-slate-800">{e.description}</p>
-                    <p className="text-xs text-slate-400">Pagó: {e.paidBy.name}</p>
+                    <p className="text-xs text-slate-400">Pagó: {displayName(e.paidBy)}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -202,7 +233,7 @@ export function Dashboard() {
                 />
                 <div className="flex-1">
                   <p className="font-medium text-slate-800">{t.title}</p>
-                  <p className="text-xs text-slate-400">Asignada a: {t.assignedTo?.name ?? "Sin asignar"}</p>
+                  <p className="text-xs text-slate-400">Asignada a: {t.assignedTo ? displayName(t.assignedTo) : "Sin asignar"}</p>
                 </div>
                 {t.dueDate && <span className="text-xs text-slate-400">{formatDate(t.dueDate)}</span>}
               </label>

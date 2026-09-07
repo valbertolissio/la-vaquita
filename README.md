@@ -1,7 +1,5 @@
 # La Vaquita 🐄
 
-**Menos cuentas. Más viaje.**
-
 App para gestionar de forma colaborativa los gastos y las tareas de un proyecto grupal: cada gasto se puede dividir entre los participantes que corresponda, el sistema calcula automáticamente cuánto le debe cada uno a cada uno, y las tareas del viaje (cocinar, lavar los platos, limpiar...) se pueden asignar de forma manual o por turnos rotativos.
 
 ## Estructura del proyecto (monorepo)
