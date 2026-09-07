@@ -75,7 +75,12 @@ export function NewExpenseScreen({ navigation, route }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
-        <Text style={styles.title}>{isEditing ? "Editar gasto" : "Gasto nuevo"}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{isEditing ? "Editar gasto" : "Gasto nuevo"}</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+            <Feather name="x" size={22} color={colors.text} />
+          </TouchableOpacity>
+        </View>
 
         {!isEditing && (
           <View style={styles.tabs}>
@@ -160,6 +165,7 @@ export function NewExpenseScreen({ navigation, route }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: { fontSize: 18, fontWeight: "700", color: colors.text },
   tabs: { flexDirection: "row", backgroundColor: "#e8e6df", borderRadius: 10, padding: 3 },
   tab: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },

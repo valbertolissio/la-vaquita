@@ -57,7 +57,7 @@ export function ExpensesScreen({ navigation }: any) {
           <Text style={styles.addButtonText}> Gasto</Text>
         </TouchableOpacity>
       </View>
-      {expenses && expenses.length > 0 && <Text style={styles.hint}>Tocá un gasto para editarlo, mantené presionado para eliminarlo.</Text>}
+      {expenses && expenses.length > 0 && <Text style={styles.hint}>Tocá un gasto para editarlo, o el ícono de tacho para eliminarlo.</Text>}
       <FlatList
         data={expenses ?? []}
         keyExtractor={(e) => e.id}
@@ -70,26 +70,31 @@ export function ExpensesScreen({ navigation }: any) {
           )
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate("Gasto nuevo", { expense: item })}
-            onLongPress={() => confirmDelete(item)}
-          >
-            <View style={styles.categoryIconWrap}>
-              <Feather name={CATEGORY_ICONS[item.category?.name ?? "Otros"] ?? "tag"} size={16} color={colors.muted} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>{item.description}</Text>
-              <View style={styles.paidByRow}>
-                <Avatar userId={item.paidBy.id} name={displayName(item.paidBy)} color={item.paidBy.avatarColor} size={16} />
-                <Text style={styles.cardSub}> Pagó: {displayName(item.paidBy)}</Text>
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.cardMain}
+              onPress={() => navigation.navigate("Gasto nuevo", { expense: item })}
+              onLongPress={() => confirmDelete(item)}
+            >
+              <View style={styles.categoryIconWrap}>
+                <Feather name={CATEGORY_ICONS[item.category?.name ?? "Otros"] ?? "tag"} size={16} color={colors.muted} />
               </View>
-            </View>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.amount}>{money(item.amount)}</Text>
-              <Text style={styles.cardSub}>{formatDate(item.expenseDate)}</Text>
-            </View>
-          </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>{item.description}</Text>
+                <View style={styles.paidByRow}>
+                  <Avatar userId={item.paidBy.id} name={displayName(item.paidBy)} color={item.paidBy.avatarColor} size={16} />
+                  <Text style={styles.cardSub}> Pagó: {displayName(item.paidBy)}</Text>
+                </View>
+              </View>
+              <View style={{ alignItems: "flex-end" }}>
+                <Text style={styles.amount}>{money(item.amount)}</Text>
+                <Text style={styles.cardSub}>{formatDate(item.expenseDate)}</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => confirmDelete(item)} hitSlop={8} style={styles.deleteButton}>
+              <Feather name="trash-2" size={16} color={colors.danger} />
+            </TouchableOpacity>
+          </View>
         )}
       />
     </SafeAreaView>
@@ -103,7 +108,9 @@ const styles = StyleSheet.create({
   addButton: { flexDirection: "row", alignItems: "center", backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   addButtonText: { color: "white", fontWeight: "600", fontSize: 12 },
   hint: { fontSize: 11, color: colors.muted, paddingHorizontal: 16 },
-  card: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "white", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border },
+  card: { flexDirection: "row", alignItems: "center", backgroundColor: "white", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border },
+  cardMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+  deleteButton: { padding: 4, marginLeft: 8 },
   categoryIconWrap: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" },
   cardTitle: { fontWeight: "600", color: colors.text },
   paidByRow: { flexDirection: "row", alignItems: "center", marginTop: 3 },
