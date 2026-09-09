@@ -8,13 +8,16 @@ import { colors } from "../lib/theme";
 
 // La API no tiene dominio propio para deep links todavía: se comparte la misma
 // URL que usa la web (/invite/:token), que ya sabe procesar la invitación.
-// Se deriva de la misma IP que ya detectamos para la API (mismo host, otro puerto).
-const WEB_ORIGIN = API_URL.replace(":4000", ":5173");
+// Se puede fijar EXPO_PUBLIC_WEB_URL a mano (ej. corriendo en modo túnel, donde
+// la API y la web viven en dominios completamente distintos); si no, se deriva
+// de la misma IP que ya detectamos para la API (mismo host, otro puerto).
+const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_URL ?? API_URL.replace(":4000", ":5173");
 
 export function InviteScreen({ navigation }: any) {
   const { trip } = useTrip();
   const [email, setEmail] = useState("");
   const [link, setLink] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   if (!trip) return null;
@@ -28,6 +31,7 @@ export function InviteScreen({ navigation }: any) {
     try {
       const invitation = await api.inviteMember(trip!.id, email.trim());
       setLink(`${WEB_ORIGIN}/invite/${invitation.token}`);
+      setEmailSent(!!invitation.emailSent);
     } catch (e: any) {
       Alert.alert("No se pudo invitar", e.message);
     } finally {
@@ -64,7 +68,17 @@ export function InviteScreen({ navigation }: any) {
         ) : (
           <>
             <Text style={styles.helper}>
-              Invitación creada para <Text style={{ fontWeight: "700" }}>{email}</Text>. Compartísela directo:
+              {emailSent ? (
+                <>
+                  Le mandamos un email a <Text style={{ fontWeight: "700" }}>{email}</Text> con la invitación. También
+                  podés compartírsela directo:
+                </>
+              ) : (
+                <>
+                  Invitación creada para <Text style={{ fontWeight: "700" }}>{email}</Text>, pero no pudimos mandar el
+                  email — compartísela directo:
+                </>
+              )}
             </Text>
             <View style={styles.linkBox}>
               <Text style={styles.linkText} numberOfLines={1}>

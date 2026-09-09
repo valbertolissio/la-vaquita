@@ -17,9 +17,10 @@ import {
   Check,
 } from "lucide-react";
 import { api } from "../lib/api";
-import { TripSummary } from "../lib/types";
+import { Task, TripSummary } from "../lib/types";
 import { StatCard } from "../components/StatCard";
 import { BalanceDetailModal } from "../components/BalanceDetailModal";
+import { CompleteTaskModal } from "../components/CompleteTaskModal";
 import { useAuth } from "../context/AuthContext";
 import { avatarColor, displayName, formatDate, formatDuration, formatMoney, initials } from "../lib/format";
 
@@ -37,6 +38,7 @@ export function Dashboard() {
   const [summary, setSummary] = useState<TripSummary | null>(null);
   const [showBalanceDetail, setShowBalanceDetail] = useState(false);
   const [markingId, setMarkingId] = useState<number | null>(null);
+  const [completingTask, setCompletingTask] = useState<Task | null>(null);
 
   function reload() {
     if (tripId) api.getSummary(tripId).then(setSummary);
@@ -44,9 +46,20 @@ export function Dashboard() {
 
   useEffect(reload, [tripId]);
 
-  async function toggleTask(taskId: string) {
+  async function toggleTask(task: Task) {
     if (!tripId) return;
-    await api.completeTask(tripId, taskId);
+    if (task.timeTracked) {
+      setCompletingTask(task);
+      return;
+    }
+    await api.completeTask(tripId, task.id);
+    reload();
+  }
+
+  async function finishTask(task: Task, durationSeconds: number) {
+    if (!tripId) return;
+    await api.completeTask(tripId, task.id, { durationSeconds });
+    setCompletingTask(null);
     reload();
   }
 
@@ -255,7 +268,7 @@ export function Dashboard() {
               <label key={t.id} className="flex cursor-pointer items-center gap-3 text-sm">
                 <input
                   type="checkbox"
-                  onChange={() => toggleTask(t.id)}
+                  onChange={() => toggleTask(t)}
                   className="h-4 w-4 rounded border-slate-300 accent-vaquita-green"
                 />
                 <div className="flex-1">
@@ -310,6 +323,14 @@ export function Dashboard() {
           )}
         </div>
       </div>
+
+      {completingTask && (
+        <CompleteTaskModal
+          task={completingTask}
+          onClose={() => setCompletingTask(null)}
+          onConfirm={(durationSeconds) => finishTask(completingTask, durationSeconds)}
+        />
+      )}
     </div>
   );
 }

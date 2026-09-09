@@ -10,6 +10,7 @@ interface Props {
 export function InviteModal({ tripId, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [link, setLink] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -24,6 +25,7 @@ export function InviteModal({ tripId, onClose }: Props) {
     try {
       const invitation = await api.inviteMember(tripId, email);
       setLink(`${window.location.origin}/invite/${invitation.token}`);
+      setEmailSent(!!invitation.emailSent);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -70,8 +72,17 @@ export function InviteModal({ tripId, onClose }: Props) {
         ) : (
           <>
             <p className="text-sm text-slate-600">
-              Invitación creada para <strong>{email}</strong>. Todavía no enviamos el email automáticamente — compartile
-              este link directamente (WhatsApp, mensaje, etc.):
+              {emailSent ? (
+                <>
+                  Le mandamos un email a <strong>{email}</strong> con la invitación. También podés compartirle este link
+                  directamente (WhatsApp, mensaje, etc.):
+                </>
+              ) : (
+                <>
+                  Invitación creada para <strong>{email}</strong>, pero no pudimos mandar el email automáticamente —
+                  compartile este link directamente (WhatsApp, mensaje, etc.):
+                </>
+              )}
             </p>
             <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600">
               <span className="flex-1 truncate">{link}</span>

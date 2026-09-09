@@ -1,13 +1,18 @@
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Feather } from "@expo/vector-icons";
 import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { colors } from "../lib/theme";
 import { Expense } from "../lib/types";
 import { displayName } from "../lib/format";
+
+function formatShort(d: Date) {
+  return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", year: "numeric" }).format(d);
+}
 
 export function NewExpenseScreen({ navigation, route }: any) {
   const { trip } = useTrip();
@@ -22,7 +27,12 @@ export function NewExpenseScreen({ navigation, route }: any) {
     expense ? expense.splits.map((s) => s.userId) : trip?.members.map((m) => m.userId) ?? []
   );
   const [notes, setNotes] = useState("");
+  const [expenseDate, setExpenseDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [receiptUri, setReceiptUri] = useState<string | null>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanNotice, setScanNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   if (!trip) return null;
@@ -38,9 +48,26 @@ export function NewExpenseScreen({ navigation, route }: any) {
       return;
     }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
-    if (!result.canceled) {
-      setReceiptUri(result.assets[0].uri);
-      setTab("manual"); // El OCR pre-completaría estos campos; por ahora pasa a carga manual para confirmar.
+    if (result.canceled) return;
+
+    const uri = result.assets[0].uri;
+    setReceiptUri(uri);
+    setScanning(true);
+    setScanNotice(null);
+    try {
+      const scan = await api.scanReceipt(trip!.id, uri);
+      setReceiptUrl(scan.receiptUrl);
+      if (scan.merchant) setDescription(scan.merchant);
+      if (scan.amount) setAmount(String(scan.amount));
+      if (scan.expenseDate) setExpenseDate(new Date(scan.expenseDate));
+      setScanNotice(
+        scan.amount || scan.merchant ? "Revisá los datos que completamos automáticamente antes de guardar." : "No pudimos leer bien el ticket — completá los datos a mano."
+      );
+    } catch (e: any) {
+      Alert.alert("No se pudo leer el ticket", e.message);
+    } finally {
+      setScanning(false);
+      setTab("manual");
     }
   }
 
@@ -58,6 +85,9 @@ export function NewExpenseScreen({ navigation, route }: any) {
         paidById,
         splitBetween,
         notes: notes || undefined,
+        expenseDate: expenseDate?.toISOString(),
+        receiptUrl: receiptUrl ?? undefined,
+        source: receiptUrl ? ("OCR" as const) : undefined,
       };
       if (isEditing) {
         await api.updateExpense(trip.id, expense!.id, payload);
@@ -94,10 +124,19 @@ export function NewExpenseScreen({ navigation, route }: any) {
         )}
 
         {tab === "ocr" ? (
-          <TouchableOpacity style={styles.dropzone} onPress={pickReceipt}>
-            <Feather name="camera" size={28} color={colors.muted} />
-            <Text style={styles.dropzoneTitle}>Sacá una foto del ticket</Text>
-            <Text style={styles.cardSub}>o elegí de tu galería</Text>
+          <TouchableOpacity style={styles.dropzone} onPress={pickReceipt} disabled={scanning}>
+            {scanning ? (
+              <>
+                <ActivityIndicator color={colors.green} />
+                <Text style={styles.dropzoneTitle}>Leyendo el ticket...</Text>
+              </>
+            ) : (
+              <>
+                <Feather name="camera" size={28} color={colors.muted} />
+                <Text style={styles.dropzoneTitle}>Sacá una foto del ticket</Text>
+                <Text style={styles.cardSub}>o elegí de tu galería</Text>
+              </>
+            )}
           </TouchableOpacity>
         ) : (
           <>
@@ -105,6 +144,12 @@ export function NewExpenseScreen({ navigation, route }: any) {
               <View style={styles.receiptOk}>
                 <Feather name="check-circle" size={14} color={colors.greenDark} />
                 <Text style={styles.cardSub}>Comprobante adjuntado</Text>
+              </View>
+            )}
+            {scanNotice && (
+              <View style={styles.scanNotice}>
+                <Feather name="check" size={12} color="#b45309" />
+                <Text style={styles.scanNoticeText}>{scanNotice}</Text>
               </View>
             )}
 
@@ -117,6 +162,29 @@ export function NewExpenseScreen({ navigation, route }: any) {
               <Text style={styles.label}>¿Cuánto fue?</Text>
               <TextInput style={styles.input} placeholder="$ 0,00" keyboardType="numeric" value={amount} onChangeText={setAmount} />
             </View>
+
+            <View>
+              <Text style={styles.label}>Fecha (opcional)</Text>
+              <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
+                <Text style={{ fontSize: 14, color: colors.text }}>{expenseDate ? formatShort(expenseDate) : "Hoy"}</Text>
+              </TouchableOpacity>
+            </View>
+            {showDatePicker && (
+              <DateTimePicker
+                value={expenseDate ?? new Date()}
+                mode="date"
+                display={Platform.OS === "ios" ? "inline" : "default"}
+                onChange={(_event, date) => {
+                  if (Platform.OS === "android") setShowDatePicker(false);
+                  if (date) setExpenseDate(date);
+                }}
+              />
+            )}
+            {showDatePicker && Platform.OS === "ios" && (
+              <TouchableOpacity style={styles.doneButton} onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.doneText}>Listo</Text>
+              </TouchableOpacity>
+            )}
 
             <View>
               <Text style={styles.label}>¿Quién pagó?</Text>
@@ -176,6 +244,10 @@ const styles = StyleSheet.create({
   dropzoneTitle: { fontWeight: "600", color: colors.text },
   cardSub: { fontSize: 12, color: colors.muted },
   receiptOk: { flexDirection: "row", alignItems: "center", gap: 6 },
+  scanNotice: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#fffbeb", borderRadius: 10, padding: 10 },
+  scanNoticeText: { fontSize: 12, color: "#b45309", fontWeight: "600", flex: 1 },
+  doneButton: { alignSelf: "flex-end", padding: 8 },
+  doneText: { color: colors.greenDark, fontWeight: "600" },
   label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 14, backgroundColor: "white" },
   chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },

@@ -6,6 +6,7 @@ import { Task, Trip } from "../lib/types";
 import { displayName, formatDate, formatDuration } from "../lib/format";
 import { NewTaskModal } from "../components/NewTaskModal";
 import { LiveTimer } from "../components/LiveTimer";
+import { CompleteTaskModal } from "../components/CompleteTaskModal";
 
 export function Tasks() {
   const { tripId } = useParams();
@@ -15,6 +16,8 @@ export function Tasks() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [completingTask, setCompletingTask] = useState<Task | null>(null);
+  const [confirmingComplete, setConfirmingComplete] = useState(false);
 
   function reload() {
     if (!tripId) return;
@@ -33,15 +36,35 @@ export function Tasks() {
   }, [toast]);
 
   async function toggleDone(task: Task) {
-    if (!tripId || task.status === "DONE") return;
-    const result = await api.completeTask(tripId, task.id);
-    const durationText = result.durationSeconds != null ? ` (te llevó ${formatDuration(result.durationSeconds)})` : "";
-    if (result.rotated && result.nextAssignee) {
-      setToast(`¡Listo${durationText}! Ahora le toca a ${result.nextAssignee.name}.`);
-    } else {
-      setToast(`¡Tarea completada${durationText}!`);
+    if (!tripId) return;
+    if (task.status === "DONE") {
+      await api.uncompleteTask(tripId, task.id);
+      reload();
+      return;
     }
-    reload();
+    if (task.timeTracked) {
+      setCompletingTask(task);
+      return;
+    }
+    await finishTask(task, undefined);
+  }
+
+  async function finishTask(task: Task, durationSeconds: number | undefined) {
+    if (!tripId) return;
+    setConfirmingComplete(true);
+    try {
+      const result = await api.completeTask(tripId, task.id, durationSeconds != null ? { durationSeconds } : undefined);
+      const durationText = result.durationSeconds != null ? ` (te llevó ${formatDuration(result.durationSeconds)})` : "";
+      if (result.rotated && result.nextAssignee) {
+        setToast(`¡Listo${durationText}! Ahora le toca a ${result.nextAssignee.name}.`);
+      } else {
+        setToast(`¡Tarea completada${durationText}!`);
+      }
+      setCompletingTask(null);
+      reload();
+    } finally {
+      setConfirmingComplete(false);
+    }
   }
 
   async function handleDelete(taskId: string) {
@@ -143,6 +166,14 @@ export function Tasks() {
             setEditingTask(null);
             reload();
           }}
+        />
+      )}
+      {completingTask && (
+        <CompleteTaskModal
+          task={completingTask}
+          onClose={() => setCompletingTask(null)}
+          onConfirm={(durationSeconds) => finishTask(completingTask, durationSeconds)}
+          submitting={confirmingComplete}
         />
       )}
     </div>
