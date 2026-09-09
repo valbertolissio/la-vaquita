@@ -1,8 +1,10 @@
 import { Response } from "express";
 import { z } from "zod";
+import { createWorker } from "tesseract.js";
 import { prisma } from "../lib/prisma";
 import { safeUserSelect } from "../lib/selects";
 import { buildEqualSplits } from "../lib/splits";
+import { parseReceiptText } from "../lib/receiptParser";
 import { AuthedRequest } from "../middleware/auth";
 
 const createExpenseSchema = z.object({
@@ -94,22 +96,42 @@ export async function deleteExpense(req: AuthedRequest, res: Response) {
 }
 
 /**
- * Recibe una imagen de comprobante y devuelve campos pre-completados
- * (monto, comercio, fecha) para que el usuario los confirme antes de guardar.
- * El motor OCR real (ej. Tesseract.js / Google Vision) se conecta acá.
+ * Recibe una imagen de comprobante, la pasa por OCR (Tesseract.js) y devuelve
+ * campos pre-completados (monto, comercio, fecha) para que el usuario los
+ * confirme antes de guardar. Las heurísticas de lectura del ticket viven en
+ * lib/receiptParser.ts — esto es una ayuda para no tipear todo a mano, no un
+ * reemplazo de la revisión manual.
  */
 export async function scanReceipt(req: AuthedRequest, res: Response) {
   if (!req.file) {
     return res.status(400).json({ error: "No se recibió ninguna imagen" });
   }
 
-  // TODO: integrar un proveedor OCR real. Placeholder para no bloquear el resto del flujo.
+  const receiptUrl = `/uploads/${req.file.filename}`;
+
+  let text = "";
+  let confidence = 0;
+  try {
+    const worker = await createWorker("spa");
+    try {
+      const result = await worker.recognize(req.file.path);
+      text = result.data.text;
+      confidence = Math.round(result.data.confidence) / 100;
+    } finally {
+      await worker.terminate();
+    }
+  } catch (err) {
+    console.error("[scanReceipt] falló el OCR:", err);
+  }
+
+  const parsed = parseReceiptText(text);
+
   res.json({
-    description: "",
-    amount: null,
-    merchant: null,
-    expenseDate: new Date().toISOString(),
-    receiptUrl: `/uploads/${req.file.filename}`,
-    confidence: 0,
+    description: parsed.merchant ?? "",
+    amount: parsed.amount,
+    merchant: parsed.merchant,
+    expenseDate: parsed.expenseDate ?? new Date().toISOString(),
+    receiptUrl,
+    confidence,
   });
 }

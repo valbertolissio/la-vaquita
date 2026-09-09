@@ -1,8 +1,12 @@
-import { useState } from "react";
-import { X, Camera } from "lucide-react";
+import { useRef, useState } from "react";
+import { X, Camera, Check } from "lucide-react";
 import { api } from "../lib/api";
 import { Expense, Trip } from "../lib/types";
 import { avatarColor, displayName, initials } from "../lib/format";
+
+function toDateInputValue(iso: string) {
+  return iso.slice(0, 10);
+}
 
 interface Props {
   tripId: string;
@@ -23,11 +27,41 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
     expense ? expense.splits.map((s) => s.userId) : trip.members.map((m) => m.userId)
   );
   const [notes, setNotes] = useState("");
+  const [expenseDate, setExpenseDate] = useState("");
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanNotice, setScanNotice] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function toggleMember(userId: string) {
     setSplitBetween((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
+  }
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !tripId) return;
+    setScanning(true);
+    setScanNotice(null);
+    try {
+      const result = await api.scanReceipt(tripId, file);
+      setReceiptUrl(result.receiptUrl);
+      if (result.merchant) setDescription(result.merchant);
+      if (result.amount) setAmount(String(result.amount));
+      if (result.expenseDate) setExpenseDate(toDateInputValue(result.expenseDate));
+      setScanNotice(
+        result.amount || result.merchant
+          ? "Revisá los datos que completamos automáticamente antes de guardar."
+          : "No pudimos leer bien el ticket — completá los datos a mano."
+      );
+      setTab("manual");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setScanning(false);
+    }
   }
 
   async function handleSubmit() {
@@ -45,6 +79,9 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
         paidById,
         splitBetween,
         notes: notes || undefined,
+        expenseDate: expenseDate || undefined,
+        receiptUrl: receiptUrl ?? undefined,
+        source: receiptUrl ? ("OCR" as const) : undefined,
       };
       if (isEditing) {
         await api.updateExpense(tripId, expense!.id, payload);
@@ -87,14 +124,35 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
         )}
 
         {tab === "ocr" ? (
-          <div className="mb-4 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 py-10 text-center text-slate-500">
-            <Camera size={28} strokeWidth={1.8} />
-            <p className="text-sm font-medium">Sacá una foto del ticket</p>
-            <p className="text-xs">o elegí de tu galería</p>
-            <p className="mt-2 text-xs text-slate-400">(El reconocimiento OCR pre-completa el formulario manual)</p>
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileSelected}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={scanning}
+              className="mb-4 flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 py-10 text-center text-slate-500 hover:border-vaquita-green hover:text-vaquita-greenDark disabled:opacity-60"
+            >
+              <Camera size={28} strokeWidth={1.8} />
+              <p className="text-sm font-medium">{scanning ? "Leyendo el ticket..." : "Sacá una foto del ticket"}</p>
+              <p className="text-xs">o elegí de tu galería</p>
+              <p className="mt-2 text-xs text-slate-400">(El reconocimiento OCR pre-completa el formulario manual)</p>
+            </button>
+            {error && <p className="text-sm text-red-500">{error}</p>}
           </div>
         ) : (
           <div className="space-y-3">
+            {scanNotice && (
+              <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                <Check size={13} strokeWidth={2.5} /> {scanNotice}
+              </div>
+            )}
             <div>
               <label className="text-xs font-medium text-slate-500">¿Qué fue?</label>
               <input
@@ -112,6 +170,15 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
                 type="number"
                 min="0"
                 placeholder="$ 0,00"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500">Fecha (opcional)</label>
+              <input
+                value={expenseDate}
+                onChange={(e) => setExpenseDate(e.target.value)}
+                type="date"
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
               />
             </div>

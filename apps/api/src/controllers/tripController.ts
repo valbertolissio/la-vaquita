@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma";
 import { safeUserSelect } from "../lib/selects";
 import { AuthedRequest } from "../middleware/auth";
 import { computeTripBalances, simplifyDebts } from "../lib/balances";
+import { sendInvitationEmail } from "../lib/mailer";
 
 const DEFAULT_CATEGORIES = [
   { name: "Alimentación", icon: "utensils", color: "#22a559" },
@@ -185,17 +186,34 @@ export async function inviteMember(req: AuthedRequest, res: Response) {
   if (!parsed.success) return res.status(400).json({ error: "Email inválido" });
 
   const token = crypto.randomBytes(24).toString("hex");
-  const invitation = await prisma.invitation.create({
-    data: {
-      tripId: req.params.tripId,
-      email: parsed.data.email,
-      token,
-      invitedById: req.userId!,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    },
-  });
+  const [invitation, trip, inviter] = await Promise.all([
+    prisma.invitation.create({
+      data: {
+        tripId: req.params.tripId,
+        email: parsed.data.email,
+        token,
+        invitedById: req.userId!,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    }),
+    prisma.trip.findUnique({ where: { id: req.params.tripId }, select: { name: true } }),
+    prisma.user.findUnique({ where: { id: req.userId! }, select: { name: true, nickname: true } }),
+  ]);
 
-  res.status(201).json(invitation);
+  const webUrl = process.env.WEB_URL ?? "http://localhost:5173";
+  let emailSent = false;
+  try {
+    emailSent = await sendInvitationEmail({
+      to: parsed.data.email,
+      tripName: trip?.name ?? "un proyecto",
+      inviterName: inviter?.nickname || inviter?.name || "Alguien",
+      link: `${webUrl}/invite/${token}`,
+    });
+  } catch (err) {
+    console.error("[inviteMember] no se pudo mandar el email de invitación:", err);
+  }
+
+  res.status(201).json({ ...invitation, emailSent });
 }
 
 export async function acceptInvitation(req: AuthedRequest, res: Response) {

@@ -9,3 +9,5 @@ apps/mobile/.expo/
 apps/api/generated/
 coverage/
 *.tsbuildinfo
+apps/api/uploads/
+*.traineddata

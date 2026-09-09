@@ -9,11 +9,14 @@ import { Task } from "../lib/types";
 import { colors } from "../lib/theme";
 import { formatDate, formatDuration, displayName } from "../lib/format";
 import { LiveTimer } from "../components/LiveTimer";
+import { CompleteTaskModal } from "../components/CompleteTaskModal";
 
 export function TasksScreen({ navigation }: any) {
   const { trip } = useTrip();
   const [tasks, setTasks] = useState<Task[] | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [completingTask, setCompletingTask] = useState<Task | null>(null);
+  const [confirmingComplete, setConfirmingComplete] = useState(false);
 
   const reload = useCallback(() => {
     if (trip) api.listTasks(trip.id).then(setTasks);
@@ -34,15 +37,35 @@ export function TasksScreen({ navigation }: any) {
   if (!trip) return null;
 
   async function toggleDone(task: Task) {
-    if (task.status === "DONE" || !trip) return;
-    const result = await api.completeTask(trip.id, task.id);
-    const durationText = result.durationSeconds != null ? ` (te llevó ${formatDuration(result.durationSeconds)})` : "";
-    if (result.rotated && result.nextAssignee) {
-      setToast(`¡Listo${durationText}! Ahora le toca a ${result.nextAssignee.name}.`);
-    } else {
-      setToast(`¡Tarea completada${durationText}!`);
+    if (!trip) return;
+    if (task.status === "DONE") {
+      await api.uncompleteTask(trip.id, task.id);
+      reload();
+      return;
     }
-    reload();
+    if (task.timeTracked) {
+      setCompletingTask(task);
+      return;
+    }
+    await finishTask(task, undefined);
+  }
+
+  async function finishTask(task: Task, durationSeconds: number | undefined) {
+    if (!trip) return;
+    setConfirmingComplete(true);
+    try {
+      const result = await api.completeTask(trip.id, task.id, durationSeconds != null ? { durationSeconds } : undefined);
+      const durationText = result.durationSeconds != null ? ` (te llevó ${formatDuration(result.durationSeconds)})` : "";
+      if (result.rotated && result.nextAssignee) {
+        setToast(`¡Listo${durationText}! Ahora le toca a ${result.nextAssignee.name}.`);
+      } else {
+        setToast(`¡Tarea completada${durationText}!`);
+      }
+      setCompletingTask(null);
+      reload();
+    } finally {
+      setConfirmingComplete(false);
+    }
   }
 
   function confirmDelete(task: Task) {
@@ -120,6 +143,15 @@ export function TasksScreen({ navigation }: any) {
           </View>
         )}
       />
+
+      {completingTask && (
+        <CompleteTaskModal
+          task={completingTask}
+          onClose={() => setCompletingTask(null)}
+          onConfirm={(durationSeconds) => finishTask(completingTask, durationSeconds)}
+          submitting={confirmingComplete}
+        />
+      )}
     </SafeAreaView>
   );
 }

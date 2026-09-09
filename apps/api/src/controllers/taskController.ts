@@ -17,6 +17,10 @@ const createTaskSchema = z.object({
   rotationName: z.string().optional(),
 });
 
+const completeTaskSchema = z.object({
+  durationSeconds: z.number().int().min(0).optional(),
+});
+
 const updateTaskSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
@@ -116,10 +120,12 @@ export async function updateTask(req: AuthedRequest, res: Response) {
 
 /**
  * Marca el turno actual como hecho. Si la tarea usa cronómetro (timeTracked),
- * calcula cuánto tardó desde startDate y lo guarda en la TaskCompletion.
- * Si es rotativa, avanza el turno al siguiente integrante y reinicia el
- * cronómetro para esa persona (el ciclo nunca queda "DONE": siempre hay a
- * quién le toca a continuación).
+ * calcula cuánto tardó desde startDate y lo guarda en la TaskCompletion —
+ * salvo que el cliente mande `durationSeconds` a mano (carga manual de
+ * horas/minutos/segundos en vez del cronómetro en vivo). Si es rotativa,
+ * avanza el turno al siguiente integrante y reinicia el cronómetro para esa
+ * persona (el ciclo nunca queda "DONE": siempre hay a quién le toca a
+ * continuación).
  */
 export async function completeTask(req: AuthedRequest, res: Response) {
   const task = await prisma.task.findUnique({
@@ -128,8 +134,13 @@ export async function completeTask(req: AuthedRequest, res: Response) {
   });
   if (!task) return res.status(404).json({ error: "Tarea no encontrada" });
 
+  const parsed = completeTaskSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
+  }
+
   const now = new Date();
-  const durationSeconds = computeDurationSeconds(task.timeTracked, task.startDate, now);
+  const durationSeconds = parsed.data.durationSeconds ?? computeDurationSeconds(task.timeTracked, task.startDate, now);
 
   await prisma.taskCompletion.create({
     data: { taskId: task.id, completedById: req.userId!, completedAt: now, durationSeconds: durationSeconds ?? undefined },
@@ -165,6 +176,37 @@ export async function completeTask(req: AuthedRequest, res: Response) {
     include: { assignedTo: { select: safeUserSelect } },
   });
   res.json({ task: updated, durationSeconds, rotated, nextAssignee });
+}
+
+/**
+ * Deshace el último "hecho" de una tarea manual (no rotativa): vuelve a
+ * PENDING y borra el registro de finalización más reciente (junto con el
+ * tiempo que sumaba a "tiempo dedicado a tareas"). Las rotativas no tienen
+ * estado DONE que destildar — siempre están PENDING, esperando el turno de
+ * alguien.
+ */
+export async function uncompleteTask(req: AuthedRequest, res: Response) {
+  const task = await prisma.task.findUnique({ where: { id: req.params.taskId } });
+  if (!task) return res.status(404).json({ error: "Tarea no encontrada" });
+  if (task.status !== "DONE") {
+    return res.status(400).json({ error: "La tarea no está marcada como hecha" });
+  }
+
+  const lastCompletion = await prisma.taskCompletion.findFirst({
+    where: { taskId: task.id },
+    orderBy: { completedAt: "desc" },
+  });
+
+  await prisma.$transaction([
+    ...(lastCompletion ? [prisma.taskCompletion.delete({ where: { id: lastCompletion.id } })] : []),
+    prisma.task.update({ where: { id: task.id }, data: { status: "PENDING" } }),
+  ]);
+
+  const updated = await prisma.task.findUnique({
+    where: { id: task.id },
+    include: { assignedTo: { select: safeUserSelect } },
+  });
+  res.json(updated);
 }
 
 export async function deleteTask(req: AuthedRequest, res: Response) {

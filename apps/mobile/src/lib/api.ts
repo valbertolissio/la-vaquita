@@ -5,7 +5,11 @@ import Constants from "expo-constants";
 // teléfono. Expo Go conoce la IP de la compu porque es la misma que usa para
 // servir el bundle (hostUri, ej. "192.168.0.61:8081") — la reusamos así no hay
 // que hardcodear ni actualizar la IP a mano cada vez que cambia la red wifi.
+// Esto se rompe en modo túnel (`expo start --tunnel`): ahí el bundler vive en
+// un dominio de túnel que NO sirve la API. Para ese caso se puede fijar
+// EXPO_PUBLIC_API_URL (ej. en un .env) apuntando a un túnel propio de la API.
 function resolveApiUrl() {
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
   const hostUri = Constants.expoConfig?.hostUri ?? (Constants as any).manifest2?.extra?.expoClient?.hostUri;
   const host = hostUri?.split(":")[0];
   if (host) return `http://${host}:4000`;
@@ -51,7 +55,7 @@ export const api = {
   deleteTrip: (tripId: string) => request<void>(`/trips/${tripId}`, { method: "DELETE" }),
   getSummary: (tripId: string) => request<any>(`/trips/${tripId}/summary`),
   inviteMember: (tripId: string, email: string) =>
-    request<{ id: string; email: string; token: string }>(`/trips/${tripId}/invitations`, {
+    request<{ id: string; email: string; token: string; emailSent: boolean }>(`/trips/${tripId}/invitations`, {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
@@ -65,17 +69,27 @@ export const api = {
     request(`/trips/${tripId}/expenses/${expenseId}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteExpense: (tripId: string, expenseId: string) =>
     request(`/trips/${tripId}/expenses/${expenseId}`, { method: "DELETE" }),
+  scanReceipt: (tripId: string, fileUri: string) => {
+    const form = new FormData();
+    form.append("receipt", { uri: fileUri, name: "receipt.jpg", type: "image/jpeg" } as any);
+    return request<{ description: string; amount: number | null; merchant: string | null; expenseDate: string; receiptUrl: string; confidence: number }>(
+      `/trips/${tripId}/expenses/scan-receipt`,
+      { method: "POST", body: form }
+    );
+  },
 
   listTasks: (tripId: string) => request<any[]>(`/trips/${tripId}/tasks`),
   createTask: (tripId: string, data: any) =>
     request(`/trips/${tripId}/tasks`, { method: "POST", body: JSON.stringify(data) }),
   updateTask: (tripId: string, taskId: string, data: any) =>
     request(`/trips/${tripId}/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify(data) }),
-  completeTask: (tripId: string, taskId: string) =>
+  completeTask: (tripId: string, taskId: string, data?: { durationSeconds?: number }) =>
     request<{ task: any; durationSeconds: number | null; rotated: boolean; nextAssignee: { id: string; name: string } | null }>(
       `/trips/${tripId}/tasks/${taskId}/complete`,
-      { method: "POST" }
+      { method: "POST", body: JSON.stringify(data ?? {}) }
     ),
+  uncompleteTask: (tripId: string, taskId: string) =>
+    request<any>(`/trips/${tripId}/tasks/${taskId}/uncomplete`, { method: "POST" }),
   deleteTask: (tripId: string, taskId: string) =>
     request(`/trips/${tripId}/tasks/${taskId}`, { method: "DELETE" }),
 
