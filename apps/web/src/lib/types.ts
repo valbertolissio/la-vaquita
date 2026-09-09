@@ -51,6 +51,15 @@ export interface Expense {
   splits: ExpenseSplit[];
 }
 
+export interface Payment {
+  id: string;
+  amount: number;
+  note: string | null;
+  createdAt: string;
+  fromUser: User;
+  toUser: User;
+}
+
 export interface TaskCompletion {
   id: string;
   completedAt: string;

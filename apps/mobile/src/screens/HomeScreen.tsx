@@ -15,14 +15,33 @@ export function HomeScreen({ navigation }: any) {
   const { user } = useAuth();
   const { trip, setTrip } = useTrip();
   const [summary, setSummary] = useState<TripSummary | null>(null);
+  const [markingIndex, setMarkingIndex] = useState<number | null>(null);
+
+  const reload = useCallback(() => {
+    if (trip) api.getSummary(trip.id).then(setSummary);
+  }, [trip]);
 
   useFocusEffect(
     useCallback(() => {
-      if (trip) api.getSummary(trip.id).then(setSummary);
-    }, [trip])
+      reload();
+    }, [reload])
   );
 
   if (!trip) return null;
+
+  async function markSettlementPaid(index: number) {
+    const s = summary?.settlements[index];
+    if (!trip || !s) return;
+    setMarkingIndex(index);
+    try {
+      await api.createPayment(trip.id, { fromUserId: s.fromUserId, toUserId: s.toUserId, amount: s.amount });
+      reload();
+    } catch (e: any) {
+      Alert.alert("No se pudo registrar el pago", e.message);
+    } finally {
+      setMarkingIndex(null);
+    }
+  }
 
   const isOrganizer = trip.members.find((m) => m.userId === user?.id)?.role === "ORGANIZER";
   const totalTimeSeconds = summary?.timeByParticipant.reduce((s, p) => s + p.totalSeconds, 0) ?? 0;
@@ -146,7 +165,17 @@ export function HomeScreen({ navigation }: any) {
                           {s.fromName} → {s.toName}
                         </Text>
                       </View>
-                      <Text style={styles.settlementAmount}>{money(s.amount)}</Text>
+                      <View style={styles.settlementRight}>
+                        <Text style={styles.settlementAmount}>{money(s.amount)}</Text>
+                        <TouchableOpacity
+                          onPress={() => markSettlementPaid(i)}
+                          disabled={markingIndex === i}
+                          style={styles.paidButton}
+                        >
+                          <Feather name="check" size={11} color={colors.greenDark} />
+                          <Text style={styles.paidButtonText}>{markingIndex === i ? "..." : "Pagado"}</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   ))}
                 </View>
@@ -249,7 +278,10 @@ const styles = StyleSheet.create({
   settlementRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.background, borderRadius: 10, padding: 10 },
   settlementNames: { flexDirection: "row", alignItems: "center", gap: 6, flex: 1 },
   settlementText: { fontSize: 12, fontWeight: "600", color: colors.text, flexShrink: 1 },
+  settlementRight: { alignItems: "flex-end", gap: 4 },
   settlementAmount: { fontSize: 13, fontWeight: "700", color: colors.text },
+  paidButton: { flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1, borderColor: "rgba(46,158,91,0.4)", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  paidButtonText: { fontSize: 10, fontWeight: "700", color: colors.greenDark },
   timeRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   progressTrack: { height: 6, borderRadius: 3, backgroundColor: colors.background, overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: "#f59e0b", borderRadius: 3 },

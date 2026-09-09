@@ -26,6 +26,8 @@ export async function computeTripBalances(tripId: string): Promise<MemberBalance
     include: { splits: true },
   });
 
+  const payments = await prisma.payment.findMany({ where: { tripId } });
+
   const balances = new Map<string, MemberBalance>();
   for (const m of members) {
     balances.set(m.userId, {
@@ -50,7 +52,22 @@ export async function computeTripBalances(tripId: string): Promise<MemberBalance
   }
 
   for (const b of balances.values()) {
-    b.balance = Math.round((b.paid - b.owed) * 100) / 100;
+    b.balance = b.paid - b.owed;
+  }
+
+  // Un pago registrado entre integrantes salda deuda por fuera de los gastos:
+  // quien paga reduce lo que debe (o aumenta lo que le deben), y quien recibe
+  // reduce lo que le deben (o aumenta lo que debe).
+  for (const payment of payments) {
+    const amount = Number(payment.amount);
+    const from = balances.get(payment.fromUserId);
+    const to = balances.get(payment.toUserId);
+    if (from) from.balance += amount;
+    if (to) to.balance -= amount;
+  }
+
+  for (const b of balances.values()) {
+    b.balance = Math.round(b.balance * 100) / 100;
     b.paid = Math.round(b.paid * 100) / 100;
     b.owed = Math.round(b.owed * 100) / 100;
   }

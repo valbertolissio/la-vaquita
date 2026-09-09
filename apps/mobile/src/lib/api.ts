@@ -78,6 +78,12 @@ export const api = {
     ),
   deleteTask: (tripId: string, taskId: string) =>
     request(`/trips/${tripId}/tasks/${taskId}`, { method: "DELETE" }),
+
+  listPayments: (tripId: string) => request<any[]>(`/trips/${tripId}/payments`),
+  createPayment: (tripId: string, data: { fromUserId: string; toUserId: string; amount: number; note?: string }) =>
+    request<any>(`/trips/${tripId}/payments`, { method: "POST", body: JSON.stringify(data) }),
+  deletePayment: (tripId: string, paymentId: string) =>
+    request(`/trips/${tripId}/payments/${paymentId}`, { method: "DELETE" }),
 };
 
 export async function saveToken(token: string) {
