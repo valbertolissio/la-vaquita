@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { UserPlus } from "lucide-react";
+import { Check, UserPlus } from "lucide-react";
 import { api } from "../lib/api";
 import { Trip, TripSummary } from "../lib/types";
 import { avatarColor, displayName, formatMoney, initials } from "../lib/format";
@@ -11,12 +11,29 @@ export function Participants() {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [summary, setSummary] = useState<TripSummary | null>(null);
   const [showInvite, setShowInvite] = useState(false);
+  const [markingId, setMarkingId] = useState<number | null>(null);
 
-  useEffect(() => {
+  function reload() {
     if (!tripId) return;
     api.getTrip(tripId).then(setTrip);
     api.getSummary(tripId).then(setSummary);
-  }, [tripId]);
+  }
+
+  useEffect(reload, [tripId]);
+
+  async function markSettlementPaid(index: number) {
+    const s = summary?.settlements[index];
+    if (!tripId || !s) return;
+    setMarkingId(index);
+    try {
+      await api.createPayment(tripId, { fromUserId: s.fromUserId, toUserId: s.toUserId, amount: s.amount });
+      reload();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setMarkingId(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -72,11 +89,22 @@ export function Participants() {
           <h2 className="mb-3 font-semibold text-slate-800">Para saldar cuentas</h2>
           <ul className="space-y-2 text-sm">
             {summary.settlements.map((s, i) => (
-              <li key={i} className="flex items-center justify-between">
+              <li key={i} className="flex items-center justify-between gap-2">
                 <span>
                   <strong>{s.fromName}</strong> le debe a <strong>{s.toName}</strong>
                 </span>
-                <span className="font-semibold text-slate-800">{formatMoney(s.amount)}</span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <span className="font-semibold text-slate-800">{formatMoney(s.amount)}</span>
+                  <button
+                    onClick={() => markSettlementPaid(i)}
+                    disabled={markingId === i}
+                    title="Marcar como pagado"
+                    className="flex items-center gap-1 rounded-full border border-vaquita-green/40 px-2 py-1 text-xs font-medium text-vaquita-greenDark hover:bg-vaquita-green/10 disabled:opacity-60"
+                  >
+                    <Check size={12} strokeWidth={2.5} />
+                    {markingId === i ? "..." : "Pagado"}
+                  </button>
+                </span>
               </li>
             ))}
           </ul>

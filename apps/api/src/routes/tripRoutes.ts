@@ -14,6 +14,7 @@ import {
 } from "../controllers/tripController";
 import { createExpense, deleteExpense, listExpenses, scanReceipt, updateExpense } from "../controllers/expenseController";
 import { completeTask, createTask, deleteTask, listTasks, updateTask } from "../controllers/taskController";
+import { createPayment, deletePayment, listPayments } from "../controllers/paymentController";
 
 const upload = multer({ dest: "uploads/" });
 
@@ -42,3 +43,7 @@ tripRoutes.post("/:tripId/tasks", requireTripMember, createTask);
 tripRoutes.patch("/:tripId/tasks/:taskId", requireTripMember, updateTask);
 tripRoutes.post("/:tripId/tasks/:taskId/complete", requireTripMember, completeTask);
 tripRoutes.delete("/:tripId/tasks/:taskId", requireTripMember, deleteTask);
+
+tripRoutes.get("/:tripId/payments", requireTripMember, listPayments);
+tripRoutes.post("/:tripId/payments", requireTripMember, createPayment);
+tripRoutes.delete("/:tripId/payments/:paymentId", requireTripMember, deletePayment);

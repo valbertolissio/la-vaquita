@@ -14,6 +14,7 @@ import {
   HandCoins,
   Clock,
   ArrowRight,
+  Check,
 } from "lucide-react";
 import { api } from "../lib/api";
 import { TripSummary } from "../lib/types";
@@ -35,6 +36,7 @@ export function Dashboard() {
   const { user } = useAuth();
   const [summary, setSummary] = useState<TripSummary | null>(null);
   const [showBalanceDetail, setShowBalanceDetail] = useState(false);
+  const [markingId, setMarkingId] = useState<number | null>(null);
 
   function reload() {
     if (tripId) api.getSummary(tripId).then(setSummary);
@@ -46,6 +48,20 @@ export function Dashboard() {
     if (!tripId) return;
     await api.completeTask(tripId, taskId);
     reload();
+  }
+
+  async function markSettlementPaid(index: number) {
+    const s = summary?.settlements[index];
+    if (!tripId || !s) return;
+    setMarkingId(index);
+    try {
+      await api.createPayment(tripId, { fromUserId: s.fromUserId, toUserId: s.toUserId, amount: s.amount });
+      reload();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setMarkingId(null);
+    }
   }
 
   if (!summary) return <p className="text-slate-400">Cargando resumen...</p>;
@@ -108,19 +124,30 @@ export function Dashboard() {
           ) : (
             <ul className="space-y-2">
               {summary.settlements.map((s, i) => (
-                <li key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5 text-sm">
-                  <span className="flex items-center gap-1.5 font-medium text-slate-700">
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(s.fromUserId, s.fromAvatarColor).bg} ${avatarColor(s.fromUserId, s.fromAvatarColor).text}`}>
+                <li key={i} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-sm">
+                  <span className="flex min-w-0 items-center gap-1.5 font-medium text-slate-700">
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] ${avatarColor(s.fromUserId, s.fromAvatarColor).bg} ${avatarColor(s.fromUserId, s.fromAvatarColor).text}`}>
                       {initials(s.fromName)}
                     </span>
-                    {s.fromName}
-                    <ArrowRight size={13} className="text-slate-400" />
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(s.toUserId, s.toAvatarColor).bg} ${avatarColor(s.toUserId, s.toAvatarColor).text}`}>
+                    <span className="truncate">{s.fromName}</span>
+                    <ArrowRight size={13} className="shrink-0 text-slate-400" />
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] ${avatarColor(s.toUserId, s.toAvatarColor).bg} ${avatarColor(s.toUserId, s.toAvatarColor).text}`}>
                       {initials(s.toName)}
                     </span>
-                    {s.toName}
+                    <span className="truncate">{s.toName}</span>
                   </span>
-                  <span className="font-bold text-slate-800">{formatMoney(s.amount)}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="font-bold text-slate-800">{formatMoney(s.amount)}</span>
+                    <button
+                      onClick={() => markSettlementPaid(i)}
+                      disabled={markingId === i}
+                      title="Marcar como pagado"
+                      className="flex items-center gap-1 rounded-full border border-vaquita-green/40 px-2 py-1 text-xs font-medium text-vaquita-greenDark hover:bg-vaquita-green/10 disabled:opacity-60"
+                    >
+                      <Check size={12} strokeWidth={2.5} />
+                      {markingId === i ? "..." : "Pagado"}
+                    </button>
+                  </span>
                 </li>
               ))}
             </ul>
