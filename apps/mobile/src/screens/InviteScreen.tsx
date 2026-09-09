@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -15,33 +15,43 @@ const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_URL ?? API_URL.replace(":4000", "
 
 export function InviteScreen({ navigation }: any) {
   const { trip } = useTrip();
-  const [email, setEmail] = useState("");
   const [link, setLink] = useState<string | null>(null);
-  const [emailSent, setEmailSent] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailSubmitting, setEmailSubmitting] = useState(false);
+  const [emailResult, setEmailResult] = useState<{ sent: boolean; to: string } | null>(null);
+
+  useEffect(() => {
+    if (!trip) return;
+    api
+      .inviteMember(trip.id)
+      .then((invitation) => setLink(`${WEB_ORIGIN}/invite/${invitation.token}`))
+      .catch((e: any) => Alert.alert("No se pudo generar la invitación", e.message));
+  }, [trip]);
 
   if (!trip) return null;
 
-  async function handleInvite() {
-    if (!email.trim()) {
-      Alert.alert("Falta el email", "Ingresá el email de la persona a invitar.");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const invitation = await api.inviteMember(trip!.id, email.trim());
-      setLink(`${WEB_ORIGIN}/invite/${invitation.token}`);
-      setEmailSent(!!invitation.emailSent);
-    } catch (e: any) {
-      Alert.alert("No se pudo invitar", e.message);
-    } finally {
-      setSubmitting(false);
-    }
+  function shareMessage() {
+    return `Te invito a sumarte a "${trip!.name}" en La Vaquita: ${link}`;
   }
 
   async function shareLink() {
     if (!link) return;
-    await Share.share({ message: `Te invito a sumarte a "${trip!.name}" en La Vaquita: ${link}` });
+    await Share.share({ message: shareMessage() });
+  }
+
+  async function sendByEmail() {
+    if (!email.trim() || !trip) return;
+    setEmailSubmitting(true);
+    try {
+      const invitation = await api.inviteMember(trip.id, email.trim());
+      setEmailResult({ sent: !!invitation.emailSent, to: email.trim() });
+    } catch (e: any) {
+      Alert.alert("No se pudo mandar el email", e.message);
+    } finally {
+      setEmailSubmitting(false);
+    }
   }
 
   return (
@@ -50,36 +60,10 @@ export function InviteScreen({ navigation }: any) {
         <Text style={styles.title}>Invitar participante</Text>
 
         {!link ? (
-          <>
-            <Text style={styles.label}>Email de la persona a invitar</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="email@ejemplo.com"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <TouchableOpacity style={styles.button} onPress={handleInvite} disabled={submitting}>
-              <Text style={styles.buttonText}>{submitting ? "Generando..." : "Generar invitación"}</Text>
-            </TouchableOpacity>
-          </>
+          <Text style={styles.helper}>Generando link de invitación...</Text>
         ) : (
           <>
-            <Text style={styles.helper}>
-              {emailSent ? (
-                <>
-                  Le mandamos un email a <Text style={{ fontWeight: "700" }}>{email}</Text> con la invitación. También
-                  podés compartírsela directo:
-                </>
-              ) : (
-                <>
-                  Invitación creada para <Text style={{ fontWeight: "700" }}>{email}</Text>, pero no pudimos mandar el
-                  email — compartísela directo:
-                </>
-              )}
-            </Text>
+            <Text style={styles.helper}>Compartí este link con quien quieras sumar al proyecto:</Text>
             <View style={styles.linkBox}>
               <Text style={styles.linkText} numberOfLines={1}>
                 {link}
@@ -87,8 +71,38 @@ export function InviteScreen({ navigation }: any) {
             </View>
             <TouchableOpacity style={styles.button} onPress={shareLink}>
               <Feather name="share-2" size={16} color="white" />
-              <Text style={styles.buttonText}> Compartir link</Text>
+              <Text style={styles.buttonText}> Compartir (WhatsApp, Instagram, etc.)</Text>
             </TouchableOpacity>
+
+            <View style={styles.emailSection}>
+              {!showEmailForm && !emailResult && (
+                <TouchableOpacity style={styles.emailToggle} onPress={() => setShowEmailForm(true)}>
+                  <Feather name="mail" size={14} color={colors.greenDark} />
+                  <Text style={styles.emailToggleText}> También mandarla por email</Text>
+                </TouchableOpacity>
+              )}
+              {showEmailForm && !emailResult && (
+                <View style={styles.emailRow}>
+                  <TextInput
+                    style={styles.emailInput}
+                    placeholder="email@ejemplo.com"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                    value={email}
+                    onChangeText={setEmail}
+                  />
+                  <TouchableOpacity style={styles.emailSendButton} onPress={sendByEmail} disabled={emailSubmitting || !email.trim()}>
+                    <Text style={styles.emailSendText}>{emailSubmitting ? "..." : "Mandar"}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {emailResult && (
+                <Text style={styles.helper}>
+                  {emailResult.sent ? `Le mandamos un email a ${emailResult.to}.` : `No pudimos mandar el email a ${emailResult.to} — probá el link.`}
+                </Text>
+              )}
+            </View>
           </>
         )}
 
@@ -111,6 +125,13 @@ const styles = StyleSheet.create({
   linkText: { fontSize: 12, color: colors.muted },
   button: { flexDirection: "row", backgroundColor: colors.green, borderRadius: 10, padding: 14, alignItems: "center", justifyContent: "center", marginTop: 4 },
   buttonText: { color: "white", textAlign: "center", fontWeight: "700" },
+  emailSection: { marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
+  emailToggle: { flexDirection: "row", alignItems: "center" },
+  emailToggleText: { color: colors.greenDark, fontWeight: "600", fontSize: 13 },
+  emailRow: { flexDirection: "row", gap: 8 },
+  emailInput: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 10, fontSize: 14, backgroundColor: "white" },
+  emailSendButton: { backgroundColor: colors.green, borderRadius: 10, paddingHorizontal: 16, alignItems: "center", justifyContent: "center" },
+  emailSendText: { color: "white", fontWeight: "700", fontSize: 13 },
   cancelButton: { padding: 10 },
   cancelText: { color: colors.muted, textAlign: "center", fontSize: 13 },
 });

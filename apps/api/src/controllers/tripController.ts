@@ -180,8 +180,11 @@ export async function deleteTrip(req: AuthedRequest, res: Response) {
   res.status(204).send();
 }
 
+// El email es opcional: sin él se genera igual un link para compartir por
+// WhatsApp/Instagram/lo que sea, sin tener que tipear el correo de nadie de
+// antemano. Si se manda un email, además se intenta avisar por esa vía.
 export async function inviteMember(req: AuthedRequest, res: Response) {
-  const schema = z.object({ email: z.string().email() });
+  const schema = z.object({ email: z.string().email().optional() });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Email inválido" });
 
@@ -202,15 +205,17 @@ export async function inviteMember(req: AuthedRequest, res: Response) {
 
   const webUrl = process.env.WEB_URL ?? "http://localhost:5173";
   let emailSent = false;
-  try {
-    emailSent = await sendInvitationEmail({
-      to: parsed.data.email,
-      tripName: trip?.name ?? "un proyecto",
-      inviterName: inviter?.nickname || inviter?.name || "Alguien",
-      link: `${webUrl}/invite/${token}`,
-    });
-  } catch (err) {
-    console.error("[inviteMember] no se pudo mandar el email de invitación:", err);
+  if (parsed.data.email) {
+    try {
+      emailSent = await sendInvitationEmail({
+        to: parsed.data.email,
+        tripName: trip?.name ?? "un proyecto",
+        inviterName: inviter?.nickname || inviter?.name || "Alguien",
+        link: `${webUrl}/invite/${token}`,
+      });
+    } catch (err) {
+      console.error("[inviteMember] no se pudo mandar el email de invitación:", err);
+    }
   }
 
   res.status(201).json({ ...invitation, emailSent });
