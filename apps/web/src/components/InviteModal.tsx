@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Share2, MessageCircle } from "lucide-react";
 import { api } from "../lib/api";
 
 interface Props {
   tripId: string;
+  tripName?: string;
   onClose: () => void;
 }
 
-export function InviteModal({ tripId, onClose }: Props) {
+const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+export function InviteModal({ tripId, tripName, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [link, setLink] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
@@ -38,6 +41,24 @@ export function InviteModal({ tripId, onClose }: Props) {
     await navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  }
+
+  function shareMessage() {
+    return `Te invito a sumarte a "${tripName ?? "este proyecto"}" en La Vaquita: ${link}`;
+  }
+
+  async function nativeShare() {
+    if (!link) return;
+    try {
+      await navigator.share({ text: shareMessage() });
+    } catch {
+      // El usuario canceló el selector nativo — no hacer nada.
+    }
+  }
+
+  function shareToWhatsApp() {
+    if (!link) return;
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage())}`, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -93,6 +114,31 @@ export function InviteModal({ tripId, onClose }: Props) {
                 {copied ? "¡Copiado!" : "Copiar"}
               </button>
             </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                onClick={shareToWhatsApp}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <MessageCircle size={15} strokeWidth={2} /> WhatsApp
+              </button>
+              {canNativeShare ? (
+                <button
+                  onClick={nativeShare}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  <Share2 size={15} strokeWidth={2} /> Más opciones
+                </button>
+              ) : (
+                <a
+                  href={`mailto:?subject=${encodeURIComponent("Invitación a La Vaquita")}&body=${encodeURIComponent(shareMessage())}`}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  <Share2 size={15} strokeWidth={2} /> Otro email
+                </a>
+              )}
+            </div>
+
             <button
               onClick={onClose}
               className="mt-4 w-full rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"

@@ -140,7 +140,7 @@ export function TripLayout() {
         </main>
       </div>
 
-      {showInvite && tripId && <InviteModal tripId={tripId} onClose={() => setShowInvite(false)} />}
+      {showInvite && tripId && <InviteModal tripId={tripId} tripName={trip?.name} onClose={() => setShowInvite(false)} />}
       {showEdit && trip && <EditTripModal trip={trip} onClose={() => setShowEdit(false)} onUpdated={setTrip} />}
       {showProfile && <EditProfileModal onClose={() => setShowProfile(false)} />}
     </div>
