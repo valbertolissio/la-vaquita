@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
@@ -11,18 +11,34 @@ import { Logo } from "../components/Logo";
 
 export function TripsListScreen({ navigation }: any) {
   const [trips, setTrips] = useState<any[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const { setTrip } = useTrip();
   const { logout } = useAuth();
 
-  useFocusEffect(
-    useCallback(() => {
-      api.listTrips().then(setTrips);
-    }, [])
-  );
+  const loadTrips = useCallback(() => {
+    setLoadError(false);
+    api
+      .listTrips()
+      .then(setTrips)
+      .catch((e: any) => {
+        setLoadError(true);
+        Alert.alert("No se pudieron cargar tus proyectos", e.message);
+      });
+  }, []);
+
+  useFocusEffect(loadTrips);
 
   async function selectTrip(tripId: string) {
-    const trip = await api.getTrip(tripId);
-    setTrip(trip);
+    setOpeningId(tripId);
+    try {
+      const trip = await api.getTrip(tripId);
+      setTrip(trip);
+    } catch (e: any) {
+      Alert.alert("No se pudo abrir el proyecto", e.message);
+    } finally {
+      setOpeningId(null);
+    }
   }
 
   return (
@@ -47,16 +63,26 @@ export function TripsListScreen({ navigation }: any) {
         keyExtractor={(t) => t.id}
         contentContainerStyle={{ padding: 16, gap: 10 }}
         ListEmptyComponent={
-          trips === null ? (
+          loadError ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.empty}>No se pudo conectar con el servidor.</Text>
+              <TouchableOpacity onPress={loadTrips}>
+                <Text style={styles.retryText}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : trips === null ? (
             <Text style={styles.empty}>Cargando tus proyectos...</Text>
           ) : (
             <Text style={styles.empty}>Todavía no tenés proyectos creados.</Text>
           )
         }
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onPress={() => selectTrip(item.id)}>
-            <Text style={styles.cardTitle}>{item.name}</Text>
-            <Text style={styles.cardSub}>{item.members.length} participantes</Text>
+          <TouchableOpacity style={styles.card} onPress={() => selectTrip(item.id)} disabled={openingId === item.id}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>{item.name}</Text>
+              <Text style={styles.cardSub}>{item.members.length} participantes</Text>
+            </View>
+            {openingId === item.id && <ActivityIndicator color={colors.green} />}
           </TouchableOpacity>
         )}
       />
@@ -81,8 +107,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   newTripText: { color: "white", fontWeight: "700", fontSize: 14 },
-  card: { backgroundColor: "white", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
+  card: { flexDirection: "row", alignItems: "center", backgroundColor: "white", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
   cardTitle: { fontSize: 16, fontWeight: "600", color: colors.text },
   cardSub: { fontSize: 12, color: colors.muted, marginTop: 4 },
   empty: { color: colors.muted, textAlign: "center", marginTop: 40 },
+  errorBox: { alignItems: "center", marginTop: 40, gap: 10 },
+  retryText: { color: colors.greenDark, fontWeight: "700", fontSize: 13 },
 });
