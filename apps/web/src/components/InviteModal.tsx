@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X, Share2, MessageCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Share2, MessageCircle, Mail } from "lucide-react";
 import { api } from "../lib/api";
 
 interface Props {
@@ -11,29 +11,24 @@ interface Props {
 const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
 export function InviteModal({ tripId, tripName, onClose }: Props) {
-  const [email, setEmail] = useState("");
   const [link, setLink] = useState<string | null>(null);
-  const [emailSent, setEmailSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  async function handleInvite() {
-    setError(null);
-    if (!email) {
-      setError("Ingresá un email.");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const invitation = await api.inviteMember(tripId, email);
-      setLink(`${window.location.origin}/invite/${invitation.token}`);
-      setEmailSent(!!invitation.emailSent);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setSubmitting(false);
-    }
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailSubmitting, setEmailSubmitting] = useState(false);
+  const [emailResult, setEmailResult] = useState<{ sent: boolean; to: string } | null>(null);
+
+  useEffect(() => {
+    api
+      .inviteMember(tripId, undefined)
+      .then((invitation) => setLink(`${window.location.origin}/invite/${invitation.token}`))
+      .catch((e: any) => setError(e.message));
+  }, [tripId]);
+
+  function shareMessage() {
+    return `Te invito a sumarte a "${tripName ?? "este proyecto"}" en La Vaquita: ${link}`;
   }
 
   async function copyLink() {
@@ -41,10 +36,6 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
     await navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-  }
-
-  function shareMessage() {
-    return `Te invito a sumarte a "${tripName ?? "este proyecto"}" en La Vaquita: ${link}`;
   }
 
   async function nativeShare() {
@@ -61,6 +52,19 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage())}`, "_blank", "noopener,noreferrer");
   }
 
+  async function sendByEmail() {
+    if (!email) return;
+    setEmailSubmitting(true);
+    try {
+      const invitation = await api.inviteMember(tripId, email);
+      setEmailResult({ sent: !!invitation.emailSent, to: email });
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setEmailSubmitting(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
@@ -71,40 +75,13 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
           </button>
         </div>
 
+        {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
+
         {!link ? (
-          <>
-            <label className="text-xs font-medium text-slate-500">Email de la persona a invitar</label>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@ejemplo.com"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              autoFocus
-            />
-            {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-            <button
-              onClick={handleInvite}
-              disabled={submitting}
-              className="mt-4 w-full rounded-lg bg-vaquita-green py-2.5 text-sm font-semibold text-white hover:bg-vaquita-greenDark disabled:opacity-60"
-            >
-              {submitting ? "Generando invitación..." : "Generar invitación"}
-            </button>
-          </>
+          <p className="text-sm text-slate-400">Generando link de invitación...</p>
         ) : (
           <>
-            <p className="text-sm text-slate-600">
-              {emailSent ? (
-                <>
-                  Le mandamos un email a <strong>{email}</strong> con la invitación. También podés compartirle este link
-                  directamente (WhatsApp, mensaje, etc.):
-                </>
-              ) : (
-                <>
-                  Invitación creada para <strong>{email}</strong>, pero no pudimos mandar el email automáticamente —
-                  compartile este link directamente (WhatsApp, mensaje, etc.):
-                </>
-              )}
-            </p>
+            <p className="text-sm text-slate-600">Compartí este link con quien quieras sumar al proyecto:</p>
             <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600">
               <span className="flex-1 truncate">{link}</span>
               <button
@@ -122,20 +99,49 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
               >
                 <MessageCircle size={15} strokeWidth={2} /> WhatsApp
               </button>
-              {canNativeShare ? (
+              {canNativeShare && (
                 <button
                   onClick={nativeShare}
                   className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                   <Share2 size={15} strokeWidth={2} /> Más opciones
                 </button>
-              ) : (
-                <a
-                  href={`mailto:?subject=${encodeURIComponent("Invitación a La Vaquita")}&body=${encodeURIComponent(shareMessage())}`}
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              )}
+            </div>
+
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              {!showEmailForm && !emailResult && (
+                <button
+                  onClick={() => setShowEmailForm(true)}
+                  className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
                 >
-                  <Share2 size={15} strokeWidth={2} /> Otro email
-                </a>
+                  <Mail size={14} strokeWidth={2} /> También mandarla por email
+                </button>
+              )}
+              {showEmailForm && !emailResult && (
+                <div className="flex items-center gap-2">
+                  <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="email@ejemplo.com"
+                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    autoFocus
+                  />
+                  <button
+                    onClick={sendByEmail}
+                    disabled={emailSubmitting || !email}
+                    className="shrink-0 rounded-lg bg-vaquita-green px-3 py-2 text-sm font-semibold text-white hover:bg-vaquita-greenDark disabled:opacity-60"
+                  >
+                    {emailSubmitting ? "..." : "Mandar"}
+                  </button>
+                </div>
+              )}
+              {emailResult && (
+                <p className="text-sm text-slate-600">
+                  {emailResult.sent
+                    ? `Le mandamos un email a ${emailResult.to}.`
+                    : `No pudimos mandar el email a ${emailResult.to} — probá compartir el link directamente.`}
+                </p>
               )}
             </div>
 

@@ -54,8 +54,8 @@ export const api = {
     request<any>(`/trips/${tripId}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteTrip: (tripId: string) => request<void>(`/trips/${tripId}`, { method: "DELETE" }),
   getSummary: (tripId: string) => request<any>(`/trips/${tripId}/summary`),
-  inviteMember: (tripId: string, email: string) =>
-    request<{ id: string; email: string; token: string; emailSent: boolean }>(`/trips/${tripId}/invitations`, {
+  inviteMember: (tripId: string, email?: string) =>
+    request<{ id: string; email: string | null; token: string; emailSent: boolean }>(`/trips/${tripId}/invitations`, {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
