@@ -2,6 +2,7 @@ import { Response } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { safeUserSelect } from "../lib/selects";
+import { buildEqualSplits } from "../lib/splits";
 import { AuthedRequest } from "../middleware/auth";
 
 const createExpenseSchema = z.object({
@@ -25,16 +26,6 @@ const updateExpenseSchema = z.object({
   notes: z.string().optional(),
   expenseDate: z.coerce.date().optional(),
 });
-
-function buildEqualSplits(totalAmount: number, userIds: string[]) {
-  const base = Math.floor((totalAmount / userIds.length) * 100) / 100;
-  const splits = userIds.map((userId) => ({ userId, amountOwed: base }));
-  // Ajuste de centavos de redondeo: el resto se lo lleva el primer integrante.
-  const assigned = base * userIds.length;
-  const remainder = Math.round((totalAmount - assigned) * 100) / 100;
-  splits[0].amountOwed = Math.round((splits[0].amountOwed + remainder) * 100) / 100;
-  return splits;
-}
 
 export async function listExpenses(req: AuthedRequest, res: Response) {
   const expenses = await prisma.expense.findMany({

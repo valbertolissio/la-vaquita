@@ -104,9 +104,18 @@ Esto abre Expo. Escaneá el QR con la app **Expo Go** desde tu celular (tiene qu
    ```
 4. Cuando cambies el `schema.prisma`, corré `npm run db:migrate` de nuevo para generar y aplicar la migración.
 
+## Tests
+
+La lógica más sensible del proyecto (cálculo de saldos, simplificación de deudas, división de gastos, avance de turnos rotativos) tiene tests unitarios con Vitest en `apps/api/src/lib/*.test.ts`. Para correrlos:
+
+```bash
+npm run test:api
+```
+
 ## Próximos pasos sugeridos
 
 - Conectar un proveedor real de OCR (ej. Google Cloud Vision o Tesseract.js) en `apps/api/src/controllers/expenseController.ts` → `scanReceipt`, que hoy es un placeholder que sólo guarda la imagen.
 - Subir comprobantes/imágenes a un storage externo (S3, Cloudinary) en vez de al disco local (`apps/api/uploads/`), pensando en producción.
-- Sumar tests automáticos (Jest/Vitest) para el cálculo de saldos y la rotación de tareas, que es la lógica más sensible del proyecto.
+- Mandar las invitaciones por email de verdad (hoy generan un link que hay que compartir a mano) — necesita una cuenta en un proveedor tipo Resend o SendGrid.
+- Recordatorios/notificaciones para tareas con fecha límite o cuyo turno rotativo cambió.
 - Deploy: API en Railway/Render, web en Vercel/Netlify, base de datos en Neon/Supabase.

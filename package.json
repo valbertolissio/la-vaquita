@@ -14,7 +14,8 @@
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:mobile": "npm run start --workspace=apps/mobile",
     "db:migrate": "npm run prisma:migrate --workspace=apps/api",
-    "db:studio": "npm run prisma:studio --workspace=apps/api"
+    "db:studio": "npm run prisma:studio --workspace=apps/api",
+    "test:api": "npm run test --workspace=apps/api"
   },
   "overrides": {
     "react-router": {

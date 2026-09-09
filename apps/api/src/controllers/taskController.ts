@@ -2,6 +2,7 @@ import { Response } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { safeUserSelect } from "../lib/selects";
+import { computeDurationSeconds, nextRotationCursor } from "../lib/rotation";
 import { AuthedRequest } from "../middleware/auth";
 
 const createTaskSchema = z.object({
@@ -128,8 +129,7 @@ export async function completeTask(req: AuthedRequest, res: Response) {
   if (!task) return res.status(404).json({ error: "Tarea no encontrada" });
 
   const now = new Date();
-  const durationSeconds =
-    task.timeTracked && task.startDate ? Math.max(0, Math.round((now.getTime() - task.startDate.getTime()) / 1000)) : null;
+  const durationSeconds = computeDurationSeconds(task.timeTracked, task.startDate, now);
 
   await prisma.taskCompletion.create({
     data: { taskId: task.id, completedById: req.userId!, completedAt: now, durationSeconds: durationSeconds ?? undefined },
@@ -140,7 +140,7 @@ export async function completeTask(req: AuthedRequest, res: Response) {
 
   if (task.assignmentType === "ROTATING" && task.rotationGroup) {
     const order = task.rotationGroup.memberOrder;
-    const nextCursor = (task.rotationGroup.cursor + 1) % order.length;
+    const nextCursor = nextRotationCursor(order, task.rotationGroup.cursor);
     await prisma.rotationGroup.update({
       where: { id: task.rotationGroup.id },
       data: { cursor: nextCursor },
