@@ -111,7 +111,7 @@ export function Participants() {
         </div>
       )}
 
-      {showInvite && tripId && <InviteModal tripId={tripId} onClose={() => setShowInvite(false)} />}
+      {showInvite && tripId && <InviteModal tripId={tripId} tripName={trip?.name} onClose={() => setShowInvite(false)} />}
     </div>
   );
 }
