@@ -13,7 +13,7 @@ interface Props {
 }
 
 function toDateInputValue(iso: string | null) {
-  return iso ? iso.slice(0, 10) : "";
+  return iso ? iso.slice(0, 16) : "";
 }
 
 export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) {
@@ -112,7 +112,7 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
               <div className="flex-1">
                 <label className="text-xs font-medium text-slate-500">Inicio (opcional)</label>
                 <input
-                  type="date"
+                  type="datetime-local"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -121,7 +121,7 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
               <div className="flex-1">
                 <label className="text-xs font-medium text-slate-500">Fin</label>
                 <input
-                  type="date"
+                  type="datetime-local"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -132,7 +132,7 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
             <div>
               <label className="text-xs font-medium text-slate-500">Inicio</label>
               <input
-                type="date"
+                type="datetime-local"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"

@@ -10,7 +10,7 @@ import { Task } from "../lib/types";
 import { displayName } from "../lib/format";
 
 function formatShort(d: Date) {
-  return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(d);
+  return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(d);
 }
 
 export function NewTaskScreen({ navigation, route }: any) {
@@ -125,7 +125,7 @@ export function NewTaskScreen({ navigation, route }: any) {
         {showPicker && (
           <DateTimePicker
             value={(showPicker === "start" ? startDate : dueDate) ?? new Date()}
-            mode="date"
+            mode="datetime"
             display={Platform.OS === "ios" ? "inline" : "default"}
             onChange={(_event, date) => {
               if (Platform.OS === "android") setShowPicker(null);
