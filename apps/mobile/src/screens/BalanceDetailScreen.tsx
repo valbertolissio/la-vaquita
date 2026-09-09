@@ -99,7 +99,7 @@ export function BalanceDetailScreen({ navigation }: any) {
       {loading ? (
         <ActivityIndicator style={{ marginTop: 24 }} color={colors.green} />
       ) : (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
           {rows.length === 0 && <Text style={styles.empty}>No participaste de ningún gasto ni pago todavía.</Text>}
           {rows.map((row) => (
             <View key={row.key} style={styles.row}>
@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: "white" },
   title: { fontSize: 16, fontWeight: "700", color: colors.text },
+  scroll: { flex: 1 },
   content: { padding: 16, gap: 10 },
   empty: { color: colors.muted, fontSize: 13, textAlign: "center", marginTop: 24 },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "white", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border },
