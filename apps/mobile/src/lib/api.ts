@@ -69,9 +69,14 @@ export const api = {
     request(`/trips/${tripId}/expenses/${expenseId}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteExpense: (tripId: string, expenseId: string) =>
     request(`/trips/${tripId}/expenses/${expenseId}`, { method: "DELETE" }),
-  scanReceipt: (tripId: string, fileUri: string) => {
+  scanReceipt: async (tripId: string, fileUri: string) => {
+    // El fetch nuevo de Expo no soporta el formato clásico de RN
+    // ({ uri, name, type }) para adjuntar un archivo a FormData — hay que
+    // convertir el archivo local a un Blob de verdad primero.
+    const fileResponse = await fetch(fileUri);
+    const blob = await fileResponse.blob();
     const form = new FormData();
-    form.append("receipt", { uri: fileUri, name: "receipt.jpg", type: "image/jpeg" } as any);
+    form.append("receipt", blob, "receipt.jpg");
     return request<{ description: string; amount: number | null; merchant: string | null; expenseDate: string; receiptUrl: string; confidence: number }>(
       `/trips/${tripId}/expenses/scan-receipt`,
       { method: "POST", body: form }
