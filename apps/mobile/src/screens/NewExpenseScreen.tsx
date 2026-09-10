@@ -41,13 +41,33 @@ export function NewExpenseScreen({ navigation, route }: any) {
     setSplitBetween((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
   }
 
-  async function pickReceipt() {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Permiso necesario", "Necesitamos acceso a la cámara para escanear el ticket.");
-      return;
+  function pickReceipt() {
+    Alert.alert("Comprobante", "¿Cómo querés cargar el ticket?", [
+      { text: "Sacar foto", onPress: () => pickReceiptFrom("camera") },
+      { text: "Elegir de la galería", onPress: () => pickReceiptFrom("library") },
+      { text: "Cancelar", style: "cancel" },
+    ]);
+  }
+
+  async function pickReceiptFrom(source: "camera" | "library") {
+    if (source === "camera") {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permiso necesario", "Necesitamos acceso a la cámara para escanear el ticket.");
+        return;
+      }
+    } else {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permiso necesario", "Necesitamos acceso a tus fotos para elegir el ticket.");
+        return;
+      }
     }
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+
+    const result =
+      source === "camera"
+        ? await ImagePicker.launchCameraAsync({ quality: 0.7 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.7 });
     if (result.canceled) return;
 
     const uri = result.assets[0].uri;
