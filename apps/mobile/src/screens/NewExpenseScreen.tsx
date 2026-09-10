@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Feather } from "@expo/vector-icons";
 import { useTrip } from "../context/TripContext";
@@ -70,11 +71,19 @@ export function NewExpenseScreen({ navigation, route }: any) {
         : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.7 });
     if (result.canceled) return;
 
-    const uri = result.assets[0].uri;
-    setReceiptUri(uri);
     setScanning(true);
     setScanNotice(null);
     try {
+      // Las fotos del iPhone (cámara o galería) vienen en HEIC, que el
+      // servidor no puede leer para el OCR — se convierten a JPEG acá antes
+      // de subir.
+      const converted = await ImageManipulator.manipulateAsync(result.assets[0].uri, [], {
+        format: ImageManipulator.SaveFormat.JPEG,
+        compress: 0.8,
+      });
+      const uri = converted.uri;
+      setReceiptUri(uri);
+
       const scan = await api.scanReceipt(trip!.id, uri);
       setReceiptUrl(scan.receiptUrl);
       if (scan.merchant) setDescription(scan.merchant);
