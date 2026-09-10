@@ -190,7 +190,7 @@ export function HomeScreen({ navigation }: any) {
                 <Text style={styles.cardHeaderTitle}>Tiempo dedicado a tareas</Text>
               </View>
               {summary.timeByParticipant.length === 0 ? (
-                <Text style={styles.cardSub}>Todavía no hay tareas con cronómetro completadas.</Text>
+                <Text style={styles.cardSub}>Todavía no hay tareas completadas con tiempo registrado.</Text>
               ) : (
                 <View style={{ gap: 10 }}>
                   {summary.timeByParticipant.map((p) => {

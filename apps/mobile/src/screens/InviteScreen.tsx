@@ -3,8 +3,10 @@ import { Alert, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } fro
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useTrip } from "../context/TripContext";
+import { useAuth } from "../context/AuthContext";
 import { api, API_URL } from "../lib/api";
 import { colors } from "../lib/theme";
+import { displayName } from "../lib/format";
 
 // La API no tiene dominio propio para deep links todavía: se comparte la misma
 // URL que usa la web (/invite/:token), que ya sabe procesar la invitación.
@@ -15,6 +17,7 @@ const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_URL ?? API_URL.replace(":4000", "
 
 export function InviteScreen({ navigation }: any) {
   const { trip } = useTrip();
+  const { user } = useAuth();
   const [link, setLink] = useState<string | null>(null);
 
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -33,7 +36,9 @@ export function InviteScreen({ navigation }: any) {
   if (!trip) return null;
 
   function shareMessage() {
-    return `Te invito a sumarte a "${trip!.name}" en La Vaquita: ${link}`;
+    const inviter = user ? displayName(user) : null;
+    const intro = inviter ? `${inviter} te invitó a sumarte a` : "Te invito a sumarte a";
+    return `${intro} "${trip!.name}" en La Vaquita: ${link}`;
   }
 
   async function shareLink() {

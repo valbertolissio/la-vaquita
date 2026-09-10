@@ -119,13 +119,13 @@ export async function updateTask(req: AuthedRequest, res: Response) {
 }
 
 /**
- * Marca el turno actual como hecho. Si la tarea usa cronómetro (timeTracked),
- * calcula cuánto tardó desde startDate y lo guarda en la TaskCompletion —
- * salvo que el cliente mande `durationSeconds` a mano (carga manual de
- * horas/minutos/segundos en vez del cronómetro en vivo). Si es rotativa,
- * avanza el turno al siguiente integrante y reinicia el cronómetro para esa
- * persona (el ciclo nunca queda "DONE": siempre hay a quién le toca a
- * continuación).
+ * Marca el turno actual como hecho. Si la tarea tiene startDate (con
+ * cronómetro o con fecha manual, da igual), calcula cuánto tardó y lo guarda
+ * en la TaskCompletion — salvo que el cliente mande `durationSeconds` a mano
+ * (carga manual de horas/minutos/segundos en vez de aceptar el tiempo
+ * calculado). Si es rotativa, avanza el turno al siguiente integrante y
+ * reinicia el cronómetro para esa persona (el ciclo nunca queda "DONE":
+ * siempre hay a quién le toca a continuación).
  */
 export async function completeTask(req: AuthedRequest, res: Response) {
   const task = await prisma.task.findUnique({
@@ -140,7 +140,7 @@ export async function completeTask(req: AuthedRequest, res: Response) {
   }
 
   const now = new Date();
-  const durationSeconds = parsed.data.durationSeconds ?? computeDurationSeconds(task.timeTracked, task.startDate, now);
+  const durationSeconds = parsed.data.durationSeconds ?? computeDurationSeconds(task.startDate, now);
 
   await prisma.taskCompletion.create({
     data: { taskId: task.id, completedById: req.userId!, completedAt: now, durationSeconds: durationSeconds ?? undefined },

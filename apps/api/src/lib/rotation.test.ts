@@ -24,20 +24,20 @@ describe("computeDurationSeconds", () => {
   const start = new Date("2026-01-01T10:00:00.000Z");
   const completedAt = new Date("2026-01-01T10:05:30.000Z");
 
-  it("returns null when the task doesn't use a timer", () => {
-    expect(computeDurationSeconds(false, start, completedAt)).toBeNull();
-  });
-
   it("returns null when the task never started", () => {
-    expect(computeDurationSeconds(true, null, completedAt)).toBeNull();
+    expect(computeDurationSeconds(null, completedAt)).toBeNull();
   });
 
   it("computes the elapsed seconds between start and completion", () => {
-    expect(computeDurationSeconds(true, start, completedAt)).toBe(330);
+    expect(computeDurationSeconds(start, completedAt)).toBe(330);
+  });
+
+  it("works the same for a manually-scheduled task, not just ones with a cronómetro", () => {
+    expect(computeDurationSeconds(start, completedAt)).toBe(330);
   });
 
   it("never returns a negative duration, even with clock skew", () => {
     const before = new Date("2026-01-01T09:59:00.000Z");
-    expect(computeDurationSeconds(true, start, before)).toBe(0);
+    expect(computeDurationSeconds(start, before)).toBe(0);
   });
 });

@@ -175,7 +175,7 @@ export function Dashboard() {
             <h2 className="text-base font-bold text-slate-800">Tiempo dedicado a tareas</h2>
           </div>
           {summary.timeByParticipant.length === 0 ? (
-            <p className="text-sm text-slate-400">Todavía no hay tareas con cronómetro completadas.</p>
+            <p className="text-sm text-slate-400">Todavía no hay tareas completadas con tiempo registrado.</p>
           ) : (
             <ul className="space-y-2.5">
               {summary.timeByParticipant.map((p) => {
