@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import * as FileSystem from "expo-file-system/legacy";
 
 // Un celular físico (Expo Go) no puede usar "localhost": eso apuntaría al propio
 // teléfono. Expo Go conoce la IP de la compu porque es la misma que usa para
@@ -38,6 +39,29 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+/**
+ * Sube un archivo local a la API. No usa fetch+FormData: el fetch nuevo de
+ * Expo no soporta el formato clásico de RN ({ uri, name, type }) para
+ * adjuntar archivos, así que se usa el uploader nativo de expo-file-system,
+ * que maneja el multipart por afuera de esa capa.
+ */
+async function uploadFile<T>(path: string, fileUri: string, fieldName: string): Promise<T> {
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const result = await FileSystem.uploadAsync(`${API_URL}/api${path}`, fileUri, {
+    httpMethod: "POST",
+    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+    fieldName,
+    mimeType: "image/jpeg",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+
+  const body = JSON.parse(result.body || "{}");
+  if (result.status < 200 || result.status >= 300) {
+    throw new Error(body.error ?? "Ocurrió un error inesperado");
+  }
+  return body;
+}
+
 export const api = {
   register: (data: { name: string; email: string; password: string }) =>
     request<{ token: string; user: any }>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
@@ -69,19 +93,12 @@ export const api = {
     request(`/trips/${tripId}/expenses/${expenseId}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteExpense: (tripId: string, expenseId: string) =>
     request(`/trips/${tripId}/expenses/${expenseId}`, { method: "DELETE" }),
-  scanReceipt: async (tripId: string, fileUri: string) => {
-    // El fetch nuevo de Expo no soporta el formato clásico de RN
-    // ({ uri, name, type }) para adjuntar un archivo a FormData — hay que
-    // convertir el archivo local a un Blob de verdad primero.
-    const fileResponse = await fetch(fileUri);
-    const blob = await fileResponse.blob();
-    const form = new FormData();
-    form.append("receipt", blob, "receipt.jpg");
-    return request<{ description: string; amount: number | null; merchant: string | null; expenseDate: string; receiptUrl: string; confidence: number }>(
+  scanReceipt: (tripId: string, fileUri: string) =>
+    uploadFile<{ description: string; amount: number | null; merchant: string | null; expenseDate: string; receiptUrl: string; confidence: number }>(
       `/trips/${tripId}/expenses/scan-receipt`,
-      { method: "POST", body: form }
-    );
-  },
+      fileUri,
+      "receipt"
+    ),
 
   listTasks: (tripId: string) => request<any[]>(`/trips/${tripId}/tasks`),
   createTask: (tripId: string, data: any) =>
