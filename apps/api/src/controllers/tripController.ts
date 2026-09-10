@@ -61,7 +61,7 @@ export async function createTrip(req: AuthedRequest, res: Response) {
       members: { create: { userId: req.userId!, role: "ORGANIZER" } },
       categories: { create: DEFAULT_CATEGORIES },
     },
-    include: { members: true, categories: true },
+    include: { members: { include: { user: { select: safeUserSelect } } }, categories: true },
   });
 
   res.status(201).json(trip);
