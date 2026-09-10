@@ -30,8 +30,13 @@ function normalizeAmount(raw: string): number | null {
   return Number.isFinite(value) && value > 0 ? Math.round(value * 100) / 100 : null;
 }
 
+// Exige centavos (",00" / ".00") a propósito: en un ticket real, los precios
+// siempre vienen con decimales, mientras que cantidades, códigos de pedido o
+// números de línea que el OCR lee mal (p. ej. "3000060" por un error de
+// lectura) no los tienen. Filtrarlos así evita que un número suelto se cuele
+// como si fuera el total.
 function findAllAmounts(text: string): number[] {
-  const matches = text.match(/\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2}|\d+/g) ?? [];
+  const matches = text.match(/\d{1,3}(?:[.,]\d{3})*[.,]\d{2}/g) ?? [];
   return matches.map(normalizeAmount).filter((n): n is number => n !== null && n < 100_000_000);
 }
 

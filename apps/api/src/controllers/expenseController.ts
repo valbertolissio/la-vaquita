@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { z } from "zod";
 import { createWorker } from "tesseract.js";
+import sharp from "sharp";
 import { prisma } from "../lib/prisma";
 import { safeUserSelect } from "../lib/selects";
 import { buildEqualSplits } from "../lib/splits";
@@ -112,9 +113,20 @@ export async function scanReceipt(req: AuthedRequest, res: Response) {
   let text = "";
   let confidence = 0;
   try {
+    // Blanco y negro + contraste: mejora mucho la lectura de tickets reales
+    // (papel térmico, fotos con poca luz o en ángulo) comparado con pasarle
+    // la foto cruda a Tesseract.
+    const preprocessed = await sharp(req.file.path)
+      .rotate()
+      .grayscale()
+      .resize({ width: 2400, withoutEnlargement: false })
+      .normalize()
+      .threshold(150)
+      .toBuffer();
+
     const worker = await createWorker("spa");
     try {
-      const result = await worker.recognize(req.file.path);
+      const result = await worker.recognize(preprocessed);
       text = result.data.text;
       confidence = Math.round(result.data.confidence) / 100;
     } finally {
