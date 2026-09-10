@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { X, Share2, MessageCircle, Mail } from "lucide-react";
 import { api } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
+import { displayName } from "../lib/format";
 
 interface Props {
   tripId: string;
@@ -11,6 +13,7 @@ interface Props {
 const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
 export function InviteModal({ tripId, tripName, onClose }: Props) {
+  const { user } = useAuth();
   const [link, setLink] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -28,7 +31,9 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
   }, [tripId]);
 
   function shareMessage() {
-    return `Te invito a sumarte a "${tripName ?? "este proyecto"}" en La Vaquita: ${link}`;
+    const inviter = user ? displayName(user) : null;
+    const intro = inviter ? `${inviter} te invitó a sumarte a` : "Te invito a sumarte a";
+    return `${intro} "${tripName ?? "este proyecto"}" en La Vaquita: ${link}`;
   }
 
   async function copyLink() {

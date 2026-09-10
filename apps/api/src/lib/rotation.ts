@@ -4,11 +4,11 @@ export function nextRotationCursor(memberOrder: string[], cursor: number): numbe
 }
 
 /**
- * Calcula cuánto duró una tarea con cronómetro, en segundos, desde que
- * arrancó hasta que se completó. Si la tarea no usa cronómetro (o nunca
- * arrancó) no hay nada que medir.
+ * Calcula cuánto duró una tarea, en segundos, desde que arrancó hasta que se
+ * completó — tenga o no cronómetro. Si nunca se le puso fecha de inicio no
+ * hay nada que medir.
  */
-export function computeDurationSeconds(timeTracked: boolean, startDate: Date | null, completedAt: Date): number | null {
-  if (!timeTracked || !startDate) return null;
+export function computeDurationSeconds(startDate: Date | null, completedAt: Date): number | null {
+  if (!startDate) return null;
   return Math.max(0, Math.round((completedAt.getTime() - startDate.getTime()) / 1000));
 }
