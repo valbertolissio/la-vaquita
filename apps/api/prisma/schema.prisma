@@ -10,9 +10,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ---------------------------------------------------------------------------
 // Usuarios
-// ---------------------------------------------------------------------------
+
 
 model User {
   id           String   @id @default(uuid())
@@ -40,9 +39,8 @@ model User {
   @@map("users")
 }
 
-// ---------------------------------------------------------------------------
-// Viajes
-// ---------------------------------------------------------------------------
+// Proyectos
+
 
 model Trip {
   id          String   @id @default(uuid())
@@ -72,7 +70,7 @@ enum TripRole {
   MEMBER
 }
 
-// Tabla puente: participantes de un viaje
+// Participantes
 model TripMember {
   id       String   @id @default(uuid())
   tripId   String   @map("trip_id")
@@ -111,9 +109,8 @@ model Invitation {
   @@map("invitations")
 }
 
-// ---------------------------------------------------------------------------
 // Categorías de gasto (por viaje, con set por defecto al crear el viaje)
-// ---------------------------------------------------------------------------
+
 
 model Category {
   id     String    @id @default(uuid())
@@ -129,9 +126,8 @@ model Category {
   @@map("categories")
 }
 
-// ---------------------------------------------------------------------------
+
 // Gastos
-// ---------------------------------------------------------------------------
 
 enum ExpenseSource {
   MANUAL
@@ -175,9 +171,8 @@ model ExpenseSplit {
   @@map("expense_splits")
 }
 
-// ---------------------------------------------------------------------------
 // Pagos entre participantes (saldar cuentas)
-// ---------------------------------------------------------------------------
+
 
 // Registra que alguien ya le pagó (efectivo, transferencia, etc.) a otro
 // integrante para saldar parte de su deuda. Es la única forma de "resetear"
@@ -198,9 +193,8 @@ model Payment {
   @@map("payments")
 }
 
-// ---------------------------------------------------------------------------
 // Tareas
-// ---------------------------------------------------------------------------
+
 
 enum TaskStatus {
   PENDING
@@ -241,7 +235,7 @@ model Task {
   @@map("tasks")
 }
 
-// Grupo de turnos rotativos (ej: "Cocinar cena" rota entre 6 participantes)
+// Grupo de turnos rotativos 
 model RotationGroup {
   id       String   @id @default(uuid())
   tripId   String   @map("trip_id")
