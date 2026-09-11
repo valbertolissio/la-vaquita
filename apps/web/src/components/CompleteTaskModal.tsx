@@ -23,19 +23,19 @@ export function CompleteTaskModal({ task, onClose, onConfirm, submitting }: Comp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10">
               <Clock size={18} strokeWidth={2} />
             </span>
-            <h3 className="text-base font-semibold text-slate-800">¿Cuánto tardaste?</h3>
+            <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100">¿Cuánto tardaste?</h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
             <X size={20} />
           </button>
         </div>
-        <p className="mb-4 text-sm text-slate-500">"{task.title}" — ajustá el tiempo si el cronómetro no arrancó justo a tiempo.</p>
+        <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">"{task.title}" — ajustá el tiempo si el cronómetro no arrancó justo a tiempo.</p>
         <div className="mb-5 flex items-center justify-center gap-2">
           {[
             { value: hours, set: setHours, label: "hs" },
@@ -48,7 +48,7 @@ export function CompleteTaskModal({ task, onClose, onConfirm, submitting }: Comp
                 min={0}
                 value={field.value}
                 onChange={(e) => field.set(Math.max(0, Number(e.target.value) || 0))}
-                className="w-16 rounded-lg border border-slate-300 px-2 py-2 text-center text-lg font-semibold"
+                className="w-16 rounded-lg border border-slate-300 px-2 py-2 text-center text-lg font-semibold dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
               />
               <span className="text-xs text-slate-400">{field.label}</span>
             </div>

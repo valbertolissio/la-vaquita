@@ -82,7 +82,7 @@ export function Tasks() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-800">Tareas</h2>
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Tareas</h2>
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-1.5 rounded-lg bg-vaquita-green px-4 py-2 text-sm font-semibold text-white hover:bg-vaquita-greenDark"
@@ -100,16 +100,16 @@ export function Tasks() {
       <div className="space-y-2">
         {tasks === null && <p className="text-sm text-slate-400">Cargando tareas...</p>}
         {tasks?.map((t) => (
-          <div key={t.id} className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <div key={t.id} className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <label className="flex flex-1 cursor-pointer items-center gap-3">
               <input
                 type="checkbox"
                 checked={t.status === "DONE"}
                 onChange={() => toggleDone(t)}
-                className="h-4 w-4 rounded border-slate-300 accent-vaquita-green"
+                className="h-4 w-4 rounded border-slate-300 accent-vaquita-green dark:border-slate-600"
               />
               <div className="flex-1">
-                <p className={`font-medium ${t.status === "DONE" ? "text-slate-400 line-through" : "text-slate-800"}`}>{t.title}</p>
+                <p className={`font-medium ${t.status === "DONE" ? "text-slate-400 line-through" : "text-slate-800 dark:text-slate-100"}`}>{t.title}</p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-400">
                   <span>Asignada a: {t.assignedTo ? displayName(t.assignedTo) : "Sin asignar"}</span>
                   {t.assignmentType === "ROTATING" && (
@@ -118,7 +118,7 @@ export function Tasks() {
                     </span>
                   )}
                   {t.timeTracked && t.startDate && t.status === "PENDING" && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700 dark:bg-amber-500/10">
                       <Clock size={10} strokeWidth={2.5} />
                       <LiveTimer startDate={t.startDate} />
                     </span>
@@ -128,13 +128,13 @@ export function Tasks() {
             </label>
             {t.dueDate && <span className="text-xs text-slate-400">{formatDate(t.dueDate)}</span>}
             <div className="flex items-center gap-3 opacity-0 transition group-hover:opacity-100">
-              <button onClick={() => setEditingTask(t)} className="text-slate-300 hover:text-slate-600" title="Editar tarea">
+              <button onClick={() => setEditingTask(t)} className="text-slate-300 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" title="Editar tarea">
                 <Pencil size={15} strokeWidth={2} />
               </button>
               <button
                 onClick={() => handleDelete(t.id)}
                 disabled={deletingId === t.id}
-                className="text-slate-300 hover:text-red-500 disabled:opacity-60"
+                className="text-slate-300 hover:text-red-500 disabled:opacity-60 dark:text-slate-500"
                 title="Eliminar tarea"
               >
                 <Trash2 size={15} strokeWidth={2} />

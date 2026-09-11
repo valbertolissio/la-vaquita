@@ -4,9 +4,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { AVATAR_COLOR_KEYS, AvatarColorKey, avatarColor, initials } from "../lib/format";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 
 export function EditProfileScreen({ navigation }: any) {
+  const { colors } = useThemeColors();
   const { user, updateProfile } = useAuth();
   const [nickname, setNickname] = useState(user?.nickname ?? "");
   const [color, setColor] = useState<AvatarColorKey | null>((user?.avatarColor as AvatarColorKey) ?? null);
@@ -28,6 +29,23 @@ export function EditProfileScreen({ navigation }: any) {
 
   const previewName = nickname.trim() || user!.name;
   const previewColor = avatarColor(user!.id, color);
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface },
+    title: { fontSize: 16, fontWeight: "700", color: colors.text },
+    content: { padding: 16, gap: 14 },
+    previewWrap: { alignItems: "center", marginBottom: 6 },
+    previewCircle: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
+    previewText: { color: "white", fontSize: 22, fontWeight: "700" },
+    label: { fontSize: 12, color: colors.muted, fontWeight: "500" },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.surface },
+    swatchRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+    swatch: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+    swatchSelected: { borderWidth: 3, borderColor: colors.text },
+    button: { backgroundColor: colors.green, borderRadius: 10, padding: 14, marginTop: 8 },
+    buttonText: { color: "white", textAlign: "center", fontWeight: "700" },
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -78,20 +96,3 @@ export function EditProfileScreen({ navigation }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: "white" },
-  title: { fontSize: 16, fontWeight: "700", color: colors.text },
-  content: { padding: 16, gap: 14 },
-  previewWrap: { alignItems: "center", marginBottom: 6 },
-  previewCircle: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
-  previewText: { color: "white", fontSize: 22, fontWeight: "700" },
-  label: { fontSize: 12, color: colors.muted, fontWeight: "500" },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: "white" },
-  swatchRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  swatch: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  swatchSelected: { borderWidth: 3, borderColor: colors.text },
-  button: { backgroundColor: colors.green, borderRadius: 10, padding: 14, marginTop: 8 },
-  buttonText: { color: "white", textAlign: "center", fontWeight: "700" },
-});

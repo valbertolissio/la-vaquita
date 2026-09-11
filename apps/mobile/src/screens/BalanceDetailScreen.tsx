@@ -7,7 +7,7 @@ import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
 import { Expense, Payment } from "../lib/types";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 import { displayName, formatDate, money } from "../lib/format";
 
 interface BreakdownRow {
@@ -20,6 +20,7 @@ interface BreakdownRow {
 }
 
 export function BalanceDetailScreen({ navigation }: any) {
+  const { colors } = useThemeColors();
   const { trip } = useTrip();
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
@@ -87,6 +88,22 @@ export function BalanceDetailScreen({ navigation }: any) {
     }
   }
 
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface },
+    title: { fontSize: 16, fontWeight: "700", color: colors.text },
+    scroll: { flex: 1 },
+    content: { padding: 16, gap: 10 },
+    empty: { color: colors.muted, fontSize: 13, textAlign: "center", marginTop: 24 },
+    row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border },
+    rowTitle: { fontSize: 14, fontWeight: "600", color: colors.text },
+    rowSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
+    rowAmount: { fontSize: 14, fontWeight: "700" },
+    footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
+    footerLabel: { fontSize: 13, fontWeight: "600", color: colors.muted },
+    footerAmount: { fontSize: 18, fontWeight: "800" },
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -133,19 +150,3 @@ export function BalanceDetailScreen({ navigation }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: "white" },
-  title: { fontSize: 16, fontWeight: "700", color: colors.text },
-  scroll: { flex: 1 },
-  content: { padding: 16, gap: 10 },
-  empty: { color: colors.muted, fontSize: 13, textAlign: "center", marginTop: 24 },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "white", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border },
-  rowTitle: { fontSize: 14, fontWeight: "600", color: colors.text },
-  rowSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  rowAmount: { fontSize: 14, fontWeight: "700" },
-  footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: "white" },
-  footerLabel: { fontSize: 13, fontWeight: "600", color: colors.muted },
-  footerAmount: { fontSize: 18, fontWeight: "800" },
-});

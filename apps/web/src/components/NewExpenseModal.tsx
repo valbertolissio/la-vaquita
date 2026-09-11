@@ -98,25 +98,25 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-800">{isEditing ? "Editar gasto" : "Gasto nuevo"}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{isEditing ? "Editar gasto" : "Gasto nuevo"}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
             <X size={18} strokeWidth={2} />
           </button>
         </div>
 
         {!isEditing && (
-          <div className="mb-4 flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
+          <div className="mb-4 flex rounded-lg bg-slate-100 p-1 text-sm font-medium dark:bg-slate-700/50">
             <button
               onClick={() => setTab("manual")}
-              className={`flex-1 rounded-md py-1.5 ${tab === "manual" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+              className={`flex-1 rounded-md py-1.5 ${tab === "manual" ? "bg-vaquita-green text-white" : "text-slate-500 dark:text-slate-400"}`}
             >
               Manual
             </button>
             <button
               onClick={() => setTab("ocr")}
-              className={`flex-1 rounded-md py-1.5 ${tab === "ocr" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+              className={`flex-1 rounded-md py-1.5 ${tab === "ocr" ? "bg-vaquita-green text-white" : "text-slate-500 dark:text-slate-400"}`}
             >
               Con comprobante (OCR)
             </button>
@@ -137,7 +137,7 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={scanning}
-              className="mb-4 flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 py-10 text-center text-slate-500 hover:border-vaquita-green hover:text-vaquita-greenDark disabled:opacity-60"
+              className="mb-4 flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 py-10 text-center text-slate-500 hover:border-vaquita-green hover:text-vaquita-greenDark disabled:opacity-60 dark:border-slate-600 dark:text-slate-400"
             >
               <Camera size={28} strokeWidth={1.8} />
               <p className="text-sm font-medium">{scanning ? "Leyendo el ticket..." : "Sacá una foto del ticket"}</p>
@@ -149,45 +149,45 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
         ) : (
           <div className="space-y-3">
             {scanNotice && (
-              <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+              <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-500/10">
                 <Check size={13} strokeWidth={2.5} /> {scanNotice}
               </div>
             )}
             <div>
-              <label className="text-xs font-medium text-slate-500">¿Qué fue?</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">¿Qué fue?</label>
               <input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Cena en restaurante"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-500">¿Cuánto fue?</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">¿Cuánto fue?</label>
               <input
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 type="number"
                 min="0"
                 placeholder="$ 0,00"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-500">Fecha (opcional)</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Fecha (opcional)</label>
               <input
                 value={expenseDate}
                 onChange={(e) => setExpenseDate(e.target.value)}
                 type="date"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-500">Categoría</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Categoría</label>
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
               >
                 {trip.categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -197,11 +197,11 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-500">¿Quién pagó?</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">¿Quién pagó?</label>
               <select
                 value={paidById}
                 onChange={(e) => setPaidById(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
               >
                 {trip.members.map((m) => (
                   <option key={m.userId} value={m.userId}>
@@ -211,7 +211,7 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-500">¿Entre quiénes se divide?</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">¿Entre quiénes se divide?</label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {trip.members.map((m) => {
                   const color = avatarColor(m.userId, m.user.avatarColor);
@@ -223,7 +223,7 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
                       className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${
                         splitBetween.includes(m.userId)
                           ? "border-vaquita-green bg-vaquita-green/10 text-vaquita-greenDark"
-                          : "border-slate-300 text-slate-500"
+                          : "border-slate-300 text-slate-500 dark:border-slate-600 dark:text-slate-400"
                       }`}
                     >
                       <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${color.bg} ${color.text}`}>
@@ -236,12 +236,12 @@ export function NewExpenseModal({ tripId, trip, expense, onClose, onCreated }: P
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-500">Notas (opcional)</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Notas (opcional)</label>
               <input
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Cena del primer día"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
               />
             </div>
 
