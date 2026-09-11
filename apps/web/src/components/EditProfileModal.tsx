@@ -35,10 +35,10 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+      <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800">
         <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-800">Editar perfil</h3>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Editar perfil</h3>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
             <X size={20} />
           </button>
         </div>
@@ -49,16 +49,16 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
           </span>
         </div>
 
-        <label className="mb-1 block text-sm font-medium text-slate-700">Sobrenombre</label>
+        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Sobrenombre</label>
         <input
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           placeholder={user.name}
           maxLength={30}
-          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
         />
 
-        <label className="mb-2 block text-sm font-medium text-slate-700">Color del avatar</label>
+        <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Color del avatar</label>
         <div className="mb-5 flex flex-wrap gap-2">
           {AVATAR_COLOR_KEYS.map((key) => {
             const c = avatarColor(user.id, key);

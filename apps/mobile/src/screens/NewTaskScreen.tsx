@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 import { Feather } from "@expo/vector-icons";
 import { Task } from "../lib/types";
 import { displayName } from "../lib/format";
@@ -14,6 +14,7 @@ function formatShort(d: Date) {
 }
 
 export function NewTaskScreen({ navigation, route }: any) {
+  const { colors, mode } = useThemeColors();
   const { trip } = useTrip();
   const task: Task | undefined = route?.params?.task;
   const isEditing = !!task;
@@ -69,6 +70,32 @@ export function NewTaskScreen({ navigation, route }: any) {
       setSubmitting(false);
     }
   }
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    content: { padding: 16, gap: 14 },
+    titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    row: { flexDirection: "row", gap: 10 },
+    label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },
+    helper: { fontSize: 11, color: colors.muted, marginTop: 4 },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.surface, justifyContent: "center" },
+    dateText: { fontSize: 14, color: colors.text },
+    doneButton: { alignSelf: "flex-end", padding: 8 },
+    doneText: { color: colors.greenDark, fontWeight: "600" },
+    tabs: { flexDirection: "row", backgroundColor: colors.border, borderRadius: 10, padding: 3 },
+    tab: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },
+    tabActive: { backgroundColor: colors.green },
+    tabText: { fontSize: 12, fontWeight: "600", color: colors.muted },
+    tabTextActive: { color: "white" },
+    chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+    chipActive: { borderColor: colors.green, backgroundColor: mode === "dark" ? "rgba(46,158,91,0.15)" : "#e8f7ee" },
+    chipText: { fontSize: 12, color: colors.muted },
+    chipTextActive: { color: colors.greenDark, fontWeight: "600" },
+    submitButton: { backgroundColor: colors.green, borderRadius: 10, padding: 14, marginTop: 4 },
+    submitText: { color: "white", textAlign: "center", fontWeight: "700" },
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -201,29 +228,3 @@ export function NewTaskScreen({ navigation, route }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, gap: 14 },
-  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  row: { flexDirection: "row", gap: 10 },
-  label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },
-  helper: { fontSize: 11, color: colors.muted, marginTop: 4 },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: "white", justifyContent: "center" },
-  dateText: { fontSize: 14, color: colors.text },
-  doneButton: { alignSelf: "flex-end", padding: 8 },
-  doneText: { color: colors.greenDark, fontWeight: "600" },
-  tabs: { flexDirection: "row", backgroundColor: "#e8e6df", borderRadius: 10, padding: 3 },
-  tab: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },
-  tabActive: { backgroundColor: colors.green },
-  tabText: { fontSize: 12, fontWeight: "600", color: colors.muted },
-  tabTextActive: { color: "white" },
-  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  chipActive: { borderColor: colors.green, backgroundColor: "#e8f7ee" },
-  chipText: { fontSize: 12, color: colors.muted },
-  chipTextActive: { color: colors.greenDark, fontWeight: "600" },
-  submitButton: { backgroundColor: colors.green, borderRadius: 10, padding: 14, marginTop: 4 },
-  submitText: { color: "white", textAlign: "center", fontWeight: "700" },
-});

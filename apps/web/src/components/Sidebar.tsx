@@ -2,6 +2,7 @@ import { NavLink, useNavigate, useParams } from "react-router-dom";
 import { LayoutDashboard, Wallet, ClipboardList, Users, Plane, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { Logo } from "./Logo";
+import { ThemeToggle } from "./ThemeToggle";
 
 const links = [
   { to: "", label: "Resumen", icon: LayoutDashboard, end: true },
@@ -51,12 +52,15 @@ export function Sidebar() {
         >
           <Plane size={18} strokeWidth={2} /> Proyectos
         </button>
-        <button
-          onClick={logout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white"
-        >
-          <LogOut size={18} strokeWidth={2} /> Cerrar sesión
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={logout}
+            className="flex flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white"
+          >
+            <LogOut size={18} strokeWidth={2} /> Cerrar sesión
+          </button>
+          <ThemeToggle variant="onNavy" />
+        </div>
       </div>
     </aside>
   );

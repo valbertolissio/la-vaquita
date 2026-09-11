@@ -7,7 +7,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Feather } from "@expo/vector-icons";
 import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 import { Expense } from "../lib/types";
 import { displayName } from "../lib/format";
 
@@ -16,6 +16,7 @@ function formatShort(d: Date) {
 }
 
 export function NewExpenseScreen({ navigation, route }: any) {
+  const { colors, mode } = useThemeColors();
   const { trip } = useTrip();
   const expense: Expense | undefined = route?.params?.expense;
   const isEditing = !!expense;
@@ -130,6 +131,34 @@ export function NewExpenseScreen({ navigation, route }: any) {
       setSubmitting(false);
     }
   }
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    tabs: { flexDirection: "row", backgroundColor: colors.border, borderRadius: 10, padding: 3 },
+    tab: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },
+    tabActive: { backgroundColor: colors.green },
+    tabText: { fontSize: 12, fontWeight: "600", color: colors.muted },
+    tabTextActive: { color: "white" },
+    dropzone: { borderWidth: 2, borderColor: colors.border, borderStyle: "dashed", borderRadius: 14, alignItems: "center", padding: 40, gap: 4 },
+    dropzoneTitle: { fontWeight: "600", color: colors.text },
+    cardSub: { fontSize: 12, color: colors.muted },
+    receiptOk: { flexDirection: "row", alignItems: "center", gap: 6 },
+    scanNotice: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: mode === "dark" ? "rgba(245,158,11,0.14)" : "#fffbeb", borderRadius: 10, padding: 10 },
+    scanNoticeText: { fontSize: 12, color: "#b45309", fontWeight: "600", flex: 1 },
+    doneButton: { alignSelf: "flex-end", padding: 8 },
+    doneText: { color: colors.greenDark, fontWeight: "600" },
+    label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 14, backgroundColor: colors.surface },
+    chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+    chipActive: { borderColor: colors.green, backgroundColor: mode === "dark" ? "rgba(46,158,91,0.15)" : "#e8f7ee" },
+    chipText: { fontSize: 12, color: colors.muted },
+    chipTextActive: { color: colors.greenDark, fontWeight: "600" },
+    submitButton: { backgroundColor: colors.green, borderRadius: 10, padding: 14, marginTop: 4 },
+    submitText: { color: "white", textAlign: "center", fontWeight: "700" },
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -259,31 +288,3 @@ export function NewExpenseScreen({ navigation, route }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  tabs: { flexDirection: "row", backgroundColor: "#e8e6df", borderRadius: 10, padding: 3 },
-  tab: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },
-  tabActive: { backgroundColor: colors.green },
-  tabText: { fontSize: 12, fontWeight: "600", color: colors.muted },
-  tabTextActive: { color: "white" },
-  dropzone: { borderWidth: 2, borderColor: colors.border, borderStyle: "dashed", borderRadius: 14, alignItems: "center", padding: 40, gap: 4 },
-  dropzoneTitle: { fontWeight: "600", color: colors.text },
-  cardSub: { fontSize: 12, color: colors.muted },
-  receiptOk: { flexDirection: "row", alignItems: "center", gap: 6 },
-  scanNotice: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#fffbeb", borderRadius: 10, padding: 10 },
-  scanNoticeText: { fontSize: 12, color: "#b45309", fontWeight: "600", flex: 1 },
-  doneButton: { alignSelf: "flex-end", padding: 8 },
-  doneText: { color: colors.greenDark, fontWeight: "600" },
-  label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 14, backgroundColor: "white" },
-  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  chipActive: { borderColor: colors.green, backgroundColor: "#e8f7ee" },
-  chipText: { fontSize: 12, color: colors.muted },
-  chipTextActive: { color: colors.greenDark, fontWeight: "600" },
-  submitButton: { backgroundColor: colors.green, borderRadius: 10, padding: 14, marginTop: 4 },
-  submitText: { color: "white", textAlign: "center", fontWeight: "700" },
-});

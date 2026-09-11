@@ -37,10 +37,10 @@ export function Participants() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div>
-          <h2 className="font-semibold text-slate-800">Participantes</h2>
-          <p className="text-sm text-slate-500">Invitá a más gente a sumarse a este proyecto.</p>
+          <h2 className="font-semibold text-slate-800 dark:text-slate-100">Participantes</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Invitá a más gente a sumarse a este proyecto.</p>
         </div>
         <button
           onClick={() => setShowInvite(true)}
@@ -50,9 +50,9 @@ export function Participants() {
         </button>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 font-semibold text-slate-800">Integrantes y saldos</h2>
-        <div className="divide-y divide-slate-100">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <h2 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Integrantes y saldos</h2>
+        <div className="divide-y divide-slate-100 dark:divide-slate-700">
           {trip?.members.map((m) => {
             const balance = summary?.balances.find((b) => b.userId === m.userId);
             const color = avatarColor(m.userId, m.user.avatarColor);
@@ -63,7 +63,7 @@ export function Participants() {
                     {initials(displayName(m.user))}
                   </span>
                   <div>
-                    <p className="font-medium text-slate-800">{displayName(m.user)}</p>
+                    <p className="font-medium text-slate-800 dark:text-slate-100">{displayName(m.user)}</p>
                     <p className="text-xs text-slate-400">{m.role === "ORGANIZER" ? "Organizador/a" : "Integrante"}</p>
                   </div>
                 </div>
@@ -85,16 +85,16 @@ export function Participants() {
       </div>
 
       {summary && summary.settlements.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 font-semibold text-slate-800">Para saldar cuentas</h2>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Para saldar cuentas</h2>
           <ul className="space-y-2 text-sm">
             {summary.settlements.map((s, i) => (
-              <li key={i} className="flex items-center justify-between gap-2">
+              <li key={i} className="flex items-center justify-between gap-2 text-slate-700 dark:text-slate-300">
                 <span>
                   <strong>{s.fromName}</strong> le debe a <strong>{s.toName}</strong>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
-                  <span className="font-semibold text-slate-800">{formatMoney(s.amount)}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{formatMoney(s.amount)}</span>
                   <button
                     onClick={() => markSettlementPaid(i)}
                     disabled={markingId === i}

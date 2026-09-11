@@ -3,7 +3,7 @@ import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "reac
 import { Feather } from "@expo/vector-icons";
 import { Task } from "../lib/types";
 import { secondsSince } from "../lib/format";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 
 interface Props {
   task: Task;
@@ -13,6 +13,7 @@ interface Props {
 }
 
 export function CompleteTaskModal({ task, onClose, onConfirm, submitting }: Props) {
+  const { colors, mode } = useThemeColors();
   const elapsed = task.startDate ? secondsSince(task.startDate) : 0;
   const [hours, setHours] = useState(String(Math.floor(elapsed / 3600)));
   const [minutes, setMinutes] = useState(String(Math.floor((elapsed % 3600) / 60)));
@@ -22,6 +23,22 @@ export function CompleteTaskModal({ task, onClose, onConfirm, submitting }: Prop
     const total = Math.max(0, Number(hours) || 0) * 3600 + Math.max(0, Number(minutes) || 0) * 60 + Math.max(0, Number(seconds) || 0);
     onConfirm(total);
   }
+
+  const styles = StyleSheet.create({
+    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center", padding: 20 },
+    card: { width: "100%", maxWidth: 340, backgroundColor: colors.surface, borderRadius: 18, padding: 20 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+    headerLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
+    iconWrap: { width: 34, height: 34, borderRadius: 17, backgroundColor: mode === "dark" ? "rgba(245,158,11,0.14)" : "#fffbeb", alignItems: "center", justifyContent: "center" },
+    title: { fontSize: 15, fontWeight: "700", color: colors.text },
+    subtitle: { fontSize: 12, color: colors.muted, marginBottom: 16 },
+    fieldsRow: { flexDirection: "row", justifyContent: "center", gap: 10, marginBottom: 18 },
+    field: { alignItems: "center", gap: 4 },
+    input: { width: 60, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 8, textAlign: "center", fontSize: 17, fontWeight: "700", color: colors.text },
+    fieldLabel: { fontSize: 11, color: colors.muted },
+    button: { backgroundColor: colors.green, borderRadius: 10, padding: 14 },
+    buttonText: { color: "white", textAlign: "center", fontWeight: "700" },
+  });
 
   return (
     <Modal transparent animationType="fade" visible onRequestClose={onClose}>
@@ -65,19 +82,3 @@ export function CompleteTaskModal({ task, onClose, onConfirm, submitting }: Prop
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center", padding: 20 },
-  card: { width: "100%", maxWidth: 340, backgroundColor: "white", borderRadius: 18, padding: 20 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
-  iconWrap: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#fffbeb", alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 15, fontWeight: "700", color: colors.text },
-  subtitle: { fontSize: 12, color: colors.muted, marginBottom: 16 },
-  fieldsRow: { flexDirection: "row", justifyContent: "center", gap: 10, marginBottom: 18 },
-  field: { alignItems: "center", gap: 4 },
-  input: { width: 60, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 8, textAlign: "center", fontSize: 17, fontWeight: "700", color: colors.text },
-  fieldLabel: { fontSize: 11, color: colors.muted },
-  button: { backgroundColor: colors.green, borderRadius: 10, padding: 14 },
-  buttonText: { color: "white", textAlign: "center", fontWeight: "700" },
-});

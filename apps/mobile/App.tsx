@@ -1,11 +1,12 @@
 import { Feather } from "@expo/vector-icons";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { TripProvider, useTrip } from "./src/context/TripContext";
+import { ThemeProvider, useThemeColors } from "./src/context/ThemeContext";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { RegisterScreen } from "./src/screens/RegisterScreen";
 import { TripsListScreen } from "./src/screens/TripsListScreen";
@@ -20,7 +21,6 @@ import { InviteScreen } from "./src/screens/InviteScreen";
 import { EditTripScreen } from "./src/screens/EditTripScreen";
 import { BalanceDetailScreen } from "./src/screens/BalanceDetailScreen";
 import { EditProfileScreen } from "./src/screens/EditProfileScreen";
-import { colors } from "./src/lib/theme";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -33,12 +33,14 @@ const TAB_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
 };
 
 function TripTabs() {
+  const { colors } = useThemeColors();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.green,
         tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
         tabBarIcon: ({ color, size }) => <Feather name={TAB_ICONS[route.name]} color={color} size={size ?? 20} />,
       })}
     >
@@ -53,11 +55,24 @@ function TripTabs() {
 function RootNavigator() {
   const { user, loading } = useAuth();
   const { trip } = useTrip();
+  const { mode, colors } = useThemeColors();
 
   if (loading) return null;
 
+  const navTheme = {
+    ...(mode === "dark" ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(mode === "dark" ? DarkTheme.colors : DefaultTheme.colors),
+      background: colors.background,
+      card: colors.surface,
+      border: colors.border,
+      text: colors.text,
+      primary: colors.green,
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
           <>
@@ -88,12 +103,14 @@ function RootNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <TripProvider>
-          <RootNavigator />
-          <StatusBar style="auto" />
-        </TripProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <TripProvider>
+            <RootNavigator />
+            <StatusBar style="auto" />
+          </TripProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

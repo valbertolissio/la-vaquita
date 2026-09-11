@@ -31,16 +31,16 @@ export function AcceptInvite() {
   }, [user, loading, token]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f5f3ee] px-4">
-      <div className="flex max-w-sm flex-col items-center rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-[#f5f3ee] px-4 dark:bg-slate-900">
+      <div className="flex max-w-sm flex-col items-center rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <Logo size={40} />
         {error ? (
           <>
             <p className="mt-3 font-semibold text-red-500">No se pudo aceptar la invitación</p>
-            <p className="mt-1 text-sm text-slate-500">{error}</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{error}</p>
           </>
         ) : (
-          <p className="mt-3 text-sm text-slate-500">Uniéndote al proyecto...</p>
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Uniéndote al proyecto...</p>
         )}
       </div>
     </div>

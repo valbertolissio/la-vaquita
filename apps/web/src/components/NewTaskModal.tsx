@@ -70,37 +70,37 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-800">{isEditing ? "Editar tarea" : "Tarea nueva"}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{isEditing ? "Editar tarea" : "Tarea nueva"}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
             <X size={18} strokeWidth={2} />
           </button>
         </div>
 
         <div className="space-y-3">
           <div>
-            <label className="text-xs font-medium text-slate-500">Título</label>
+            <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Título</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Cocinar cena"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
             />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-slate-500">¿Cómo querés controlar el tiempo?</label>
-            <div className="mt-1 flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
+            <label className="text-xs font-medium text-slate-500 dark:text-slate-400">¿Cómo querés controlar el tiempo?</label>
+            <div className="mt-1 flex rounded-lg bg-slate-100 p-1 text-sm font-medium dark:bg-slate-700/50">
               <button
                 onClick={() => setScheduleMode("MANUAL")}
-                className={`flex-1 rounded-md py-1.5 ${scheduleMode === "MANUAL" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+                className={`flex-1 rounded-md py-1.5 ${scheduleMode === "MANUAL" ? "bg-vaquita-green text-white" : "text-slate-500 dark:text-slate-400"}`}
               >
                 Fechas manuales
               </button>
               <button
                 onClick={() => setScheduleMode("TIMER")}
-                className={`flex-1 rounded-md py-1.5 ${scheduleMode === "TIMER" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+                className={`flex-1 rounded-md py-1.5 ${scheduleMode === "TIMER" ? "bg-vaquita-green text-white" : "text-slate-500 dark:text-slate-400"}`}
               >
                 Cronómetro
               </button>
@@ -110,32 +110,32 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
           {scheduleMode === "MANUAL" ? (
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="text-xs font-medium text-slate-500">Inicio (opcional)</label>
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Inicio (opcional)</label>
                 <input
                   type="datetime-local"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
                 />
               </div>
               <div className="flex-1">
-                <label className="text-xs font-medium text-slate-500">Fin</label>
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Fin</label>
                 <input
                   type="datetime-local"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
                 />
               </div>
             </div>
           ) : (
             <div>
-              <label className="text-xs font-medium text-slate-500">Inicio</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Inicio</label>
               <input
                 type="datetime-local"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
               />
               <p className="mt-1 text-xs text-slate-400">
                 Si lo dejás vacío, arranca a contar desde ahora. Al marcarla como hecha vas a ver cuánto tiempo llevó.
@@ -144,16 +144,16 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
           )}
 
           {!isEditing && (
-            <div className="flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
+            <div className="flex rounded-lg bg-slate-100 p-1 text-sm font-medium dark:bg-slate-700/50">
               <button
                 onClick={() => setAssignmentType("MANUAL")}
-                className={`flex-1 rounded-md py-1.5 ${assignmentType === "MANUAL" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+                className={`flex-1 rounded-md py-1.5 ${assignmentType === "MANUAL" ? "bg-vaquita-green text-white" : "text-slate-500 dark:text-slate-400"}`}
               >
                 Asignación manual
               </button>
               <button
                 onClick={() => setAssignmentType("ROTATING")}
-                className={`flex-1 rounded-md py-1.5 ${assignmentType === "ROTATING" ? "bg-vaquita-green text-white" : "text-slate-500"}`}
+                className={`flex-1 rounded-md py-1.5 ${assignmentType === "ROTATING" ? "bg-vaquita-green text-white" : "text-slate-500 dark:text-slate-400"}`}
               >
                 Turno rotativo
               </button>
@@ -162,11 +162,11 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
 
           {assignmentType === "MANUAL" ? (
             <div>
-              <label className="text-xs font-medium text-slate-500">Asignada a</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Asignada a</label>
               <select
                 value={assignedToId}
                 onChange={(e) => setAssignedToId(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
               >
                 {trip.members.map((m) => (
                   <option key={m.userId} value={m.userId}>
@@ -177,7 +177,7 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
             </div>
           ) : !isEditing ? (
             <div>
-              <label className="text-xs font-medium text-slate-500">Integrantes del turno (en orden)</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Integrantes del turno (en orden)</label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {trip.members.map((m) => (
                   <button
@@ -187,7 +187,7 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
                     className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
                       rotationMembers.includes(m.userId)
                         ? "border-vaquita-green bg-vaquita-green/10 text-vaquita-greenDark"
-                        : "border-slate-300 text-slate-500"
+                        : "border-slate-300 text-slate-500 dark:border-slate-600 dark:text-slate-400"
                     }`}
                   >
                     {displayName(m.user)}

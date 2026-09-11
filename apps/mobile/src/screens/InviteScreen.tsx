@@ -5,7 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
 import { api, API_URL } from "../lib/api";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 import { displayName } from "../lib/format";
 
 // La API no tiene dominio propio para deep links todavía: se comparte la misma
@@ -16,6 +16,7 @@ import { displayName } from "../lib/format";
 const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_URL ?? API_URL.replace(":4000", ":5173");
 
 export function InviteScreen({ navigation }: any) {
+  const { colors } = useThemeColors();
   const { trip } = useTrip();
   const { user } = useAuth();
   const [link, setLink] = useState<string | null>(null);
@@ -58,6 +59,28 @@ export function InviteScreen({ navigation }: any) {
       setEmailSubmitting(false);
     }
   }
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    content: { padding: 16, gap: 12 },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    label: { fontSize: 12, color: colors.muted, fontWeight: "500" },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 14, backgroundColor: colors.surface },
+    helper: { fontSize: 13, color: colors.text },
+    linkBox: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.surface },
+    linkText: { fontSize: 12, color: colors.muted },
+    button: { flexDirection: "row", backgroundColor: colors.green, borderRadius: 10, padding: 14, alignItems: "center", justifyContent: "center", marginTop: 4 },
+    buttonText: { color: "white", textAlign: "center", fontWeight: "700" },
+    emailSection: { marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
+    emailToggle: { flexDirection: "row", alignItems: "center" },
+    emailToggleText: { color: colors.greenDark, fontWeight: "600", fontSize: 13 },
+    emailRow: { flexDirection: "row", gap: 8 },
+    emailInput: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 10, fontSize: 14, backgroundColor: colors.surface },
+    emailSendButton: { backgroundColor: colors.green, borderRadius: 10, paddingHorizontal: 16, alignItems: "center", justifyContent: "center" },
+    emailSendText: { color: "white", fontWeight: "700", fontSize: 13 },
+    cancelButton: { padding: 10 },
+    cancelText: { color: colors.muted, textAlign: "center", fontSize: 13 },
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -118,25 +141,3 @@ export function InviteScreen({ navigation }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, gap: 12 },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  label: { fontSize: 12, color: colors.muted, fontWeight: "500" },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 14, backgroundColor: "white" },
-  helper: { fontSize: 13, color: colors.text },
-  linkBox: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: "white" },
-  linkText: { fontSize: 12, color: colors.muted },
-  button: { flexDirection: "row", backgroundColor: colors.green, borderRadius: 10, padding: 14, alignItems: "center", justifyContent: "center", marginTop: 4 },
-  buttonText: { color: "white", textAlign: "center", fontWeight: "700" },
-  emailSection: { marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
-  emailToggle: { flexDirection: "row", alignItems: "center" },
-  emailToggleText: { color: colors.greenDark, fontWeight: "600", fontSize: 13 },
-  emailRow: { flexDirection: "row", gap: 8 },
-  emailInput: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 10, fontSize: 14, backgroundColor: "white" },
-  emailSendButton: { backgroundColor: colors.green, borderRadius: 10, paddingHorizontal: 16, alignItems: "center", justifyContent: "center" },
-  emailSendText: { color: "white", fontWeight: "700", fontSize: 13 },
-  cancelButton: { padding: 10 },
-  cancelText: { color: colors.muted, textAlign: "center", fontSize: 13 },
-});

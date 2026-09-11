@@ -11,13 +11,13 @@ interface StatCardProps {
 const toneClasses: Record<NonNullable<StatCardProps["tone"]>, string> = {
   positive: "text-vaquita-greenDark",
   negative: "text-red-500",
-  neutral: "text-slate-800",
+  neutral: "text-slate-800 dark:text-slate-100",
 };
 
 export function StatCard({ icon: Icon, label, value, sub, tone = "neutral" }: StatCardProps) {
   return (
-    <div className="flex-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-2 text-sm text-slate-500">
+    <div className="flex-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
         <Icon size={16} strokeWidth={2} />
         {label}
       </div>

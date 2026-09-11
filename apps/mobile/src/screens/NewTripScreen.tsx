@@ -4,13 +4,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { api } from "../lib/api";
 import { useTrip } from "../context/TripContext";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 
 function formatShort(d: Date) {
   return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", year: "numeric" }).format(d);
 }
 
 export function NewTripScreen({ navigation }: any) {
+  const { colors } = useThemeColors();
   const { setTrip } = useTrip();
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState(new Date());
@@ -41,6 +42,22 @@ export function NewTripScreen({ navigation }: any) {
       setSubmitting(false);
     }
   }
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    content: { padding: 16, gap: 14 },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    row: { flexDirection: "row", gap: 10 },
+    label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.surface, justifyContent: "center" },
+    dateText: { fontSize: 14, color: colors.text },
+    doneButton: { alignSelf: "flex-end", padding: 8 },
+    doneText: { color: colors.greenDark, fontWeight: "600" },
+    button: { backgroundColor: colors.green, borderRadius: 10, padding: 14, marginTop: 4 },
+    buttonText: { color: "white", textAlign: "center", fontWeight: "700" },
+    cancelButton: { padding: 10 },
+    cancelText: { color: colors.muted, textAlign: "center", fontSize: 13 },
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -96,19 +113,3 @@ export function NewTripScreen({ navigation }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, gap: 14 },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  row: { flexDirection: "row", gap: 10 },
-  label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: "white", justifyContent: "center" },
-  dateText: { fontSize: 14, color: colors.text },
-  doneButton: { alignSelf: "flex-end", padding: 8 },
-  doneText: { color: colors.greenDark, fontWeight: "600" },
-  button: { backgroundColor: colors.green, borderRadius: 10, padding: 14, marginTop: 4 },
-  buttonText: { color: "white", textAlign: "center", fontWeight: "700" },
-  cancelButton: { padding: 10 },
-  cancelText: { color: colors.muted, textAlign: "center", fontSize: 13 },
-});

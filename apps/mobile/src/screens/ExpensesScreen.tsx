@@ -6,7 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { Expense } from "../lib/types";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 import { money, formatDate, displayName } from "../lib/format";
 import { Avatar } from "../components/Avatar";
 
@@ -19,6 +19,7 @@ const CATEGORY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
 };
 
 export function ExpensesScreen({ navigation }: any) {
+  const { colors } = useThemeColors();
   const { trip } = useTrip();
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
 
@@ -47,6 +48,24 @@ export function ExpensesScreen({ navigation }: any) {
       },
     ]);
   }
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16 },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    addButton: { flexDirection: "row", alignItems: "center", backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+    addButtonText: { color: "white", fontWeight: "600", fontSize: 12 },
+    hint: { fontSize: 11, color: colors.muted, paddingHorizontal: 16 },
+    card: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border },
+    cardMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+    deleteButton: { padding: 4, marginLeft: 8 },
+    categoryIconWrap: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" },
+    cardTitle: { fontWeight: "600", color: colors.text },
+    paidByRow: { flexDirection: "row", alignItems: "center", marginTop: 3 },
+    cardSub: { fontSize: 12, color: colors.muted },
+    amount: { fontWeight: "700", color: colors.text },
+    empty: { textAlign: "center", color: colors.muted, marginTop: 40 },
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -100,21 +119,3 @@ export function ExpensesScreen({ navigation }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16 },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  addButton: { flexDirection: "row", alignItems: "center", backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
-  addButtonText: { color: "white", fontWeight: "600", fontSize: 12 },
-  hint: { fontSize: 11, color: colors.muted, paddingHorizontal: 16 },
-  card: { flexDirection: "row", alignItems: "center", backgroundColor: "white", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border },
-  cardMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
-  deleteButton: { padding: 4, marginLeft: 8 },
-  categoryIconWrap: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" },
-  cardTitle: { fontWeight: "600", color: colors.text },
-  paidByRow: { flexDirection: "row", alignItems: "center", marginTop: 3 },
-  cardSub: { fontSize: 12, color: colors.muted },
-  amount: { fontWeight: "700", color: colors.text },
-  empty: { textAlign: "center", color: colors.muted, marginTop: 40 },
-});

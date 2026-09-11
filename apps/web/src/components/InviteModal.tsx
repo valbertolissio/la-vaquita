@@ -72,10 +72,10 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-800">Invitar participante</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Invitar participante</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
             <X size={18} strokeWidth={2} />
           </button>
         </div>
@@ -86,12 +86,12 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
           <p className="text-sm text-slate-400">Generando link de invitación...</p>
         ) : (
           <>
-            <p className="text-sm text-slate-600">Compartí este link con quien quieras sumar al proyecto:</p>
-            <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-300">Compartí este link con quien quieras sumar al proyecto:</p>
+            <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
               <span className="flex-1 truncate">{link}</span>
               <button
                 onClick={copyLink}
-                className="shrink-0 rounded-md bg-slate-200 px-2 py-1 font-medium text-slate-700 hover:bg-slate-300"
+                className="shrink-0 rounded-md bg-slate-200 px-2 py-1 font-medium text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
               >
                 {copied ? "¡Copiado!" : "Copiar"}
               </button>
@@ -100,21 +100,21 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button
                 onClick={shareToWhatsApp}
-                className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700/50"
               >
                 <MessageCircle size={15} strokeWidth={2} /> WhatsApp
               </button>
               {canNativeShare && (
                 <button
                   onClick={nativeShare}
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700/50"
                 >
                   <Share2 size={15} strokeWidth={2} /> Más opciones
                 </button>
               )}
             </div>
 
-            <div className="mt-4 border-t border-slate-100 pt-4">
+            <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700">
               {!showEmailForm && !emailResult && (
                 <button
                   onClick={() => setShowEmailForm(true)}
@@ -129,7 +129,7 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="email@ejemplo.com"
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
                     autoFocus
                   />
                   <button
@@ -142,7 +142,7 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
                 </div>
               )}
               {emailResult && (
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
                   {emailResult.sent
                     ? `Le mandamos un email a ${emailResult.to}.`
                     : `No pudimos mandar el email a ${emailResult.to} — probá compartir el link directamente.`}
@@ -152,7 +152,7 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
 
             <button
               onClick={onClose}
-              className="mt-4 w-full rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="mt-4 w-full rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700/50"
             >
               Listo
             </button>

@@ -6,12 +6,13 @@ import { Feather } from "@expo/vector-icons";
 import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { Task } from "../lib/types";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 import { formatDate, formatDuration, displayName } from "../lib/format";
 import { LiveTimer } from "../components/LiveTimer";
 import { CompleteTaskModal } from "../components/CompleteTaskModal";
 
 export function TasksScreen({ navigation }: any) {
+  const { colors, mode } = useThemeColors();
   const { trip } = useTrip();
   const [tasks, setTasks] = useState<Task[] | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -81,6 +82,31 @@ export function TasksScreen({ navigation }: any) {
       },
     ]);
   }
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16 },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    addButton: { flexDirection: "row", alignItems: "center", backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+    addButtonText: { color: "white", fontWeight: "600", fontSize: 12 },
+    hint: { fontSize: 11, color: colors.muted, paddingHorizontal: 16, marginBottom: 4 },
+    toast: { marginHorizontal: 16, marginBottom: 8, backgroundColor: mode === "dark" ? "rgba(46,158,91,0.15)" : "#e8f7ee", borderRadius: 10, padding: 12 },
+    toastText: { color: colors.greenDark, fontWeight: "600", fontSize: 13 },
+    card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border },
+    checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+    checkboxDone: { backgroundColor: colors.green, borderColor: colors.green },
+    cardTitle: { fontWeight: "600", color: colors.text },
+    done: { textDecorationLine: "line-through", color: colors.muted },
+    subRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 3 },
+    cardSub: { fontSize: 12, color: colors.muted },
+    badge: { flexDirection: "row", alignItems: "center", backgroundColor: mode === "dark" ? "rgba(46,158,91,0.15)" : "#e8f7ee", borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2 },
+    badgeText: { fontSize: 10, color: colors.greenDark, fontWeight: "600" },
+    timerBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: mode === "dark" ? "rgba(245,158,11,0.14)" : "#fffbeb", borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2 },
+    timerText: { fontSize: 10, color: "#b45309", fontWeight: "600" },
+    dueDate: { fontSize: 12, color: colors.muted },
+    deleteButton: { padding: 4 },
+    empty: { textAlign: "center", color: colors.muted, marginTop: 40 },
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -155,28 +181,3 @@ export function TasksScreen({ navigation }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16 },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  addButton: { flexDirection: "row", alignItems: "center", backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
-  addButtonText: { color: "white", fontWeight: "600", fontSize: 12 },
-  hint: { fontSize: 11, color: colors.muted, paddingHorizontal: 16, marginBottom: 4 },
-  toast: { marginHorizontal: 16, marginBottom: 8, backgroundColor: "#e8f7ee", borderRadius: 10, padding: 12 },
-  toastText: { color: colors.greenDark, fontWeight: "600", fontSize: 13 },
-  card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "white", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border },
-  checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
-  checkboxDone: { backgroundColor: colors.green, borderColor: colors.green },
-  cardTitle: { fontWeight: "600", color: colors.text },
-  done: { textDecorationLine: "line-through", color: colors.muted },
-  subRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 3 },
-  cardSub: { fontSize: 12, color: colors.muted },
-  badge: { flexDirection: "row", alignItems: "center", backgroundColor: "#e8f7ee", borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2 },
-  badgeText: { fontSize: 10, color: colors.greenDark, fontWeight: "600" },
-  timerBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#fffbeb", borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2 },
-  timerText: { fontSize: 10, color: "#b45309", fontWeight: "600" },
-  dueDate: { fontSize: 12, color: colors.muted },
-  deleteButton: { padding: 4 },
-  empty: { textAlign: "center", color: colors.muted, marginTop: 40 },
-});

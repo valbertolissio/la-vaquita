@@ -6,10 +6,11 @@ import { Feather } from "@expo/vector-icons";
 import { api } from "../lib/api";
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 import { Logo } from "../components/Logo";
 
 export function TripsListScreen({ navigation }: any) {
+  const { colors } = useThemeColors();
   const [trips, setTrips] = useState<any[] | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [openingId, setOpeningId] = useState<string | null>(null);
@@ -40,6 +41,31 @@ export function TripsListScreen({ navigation }: any) {
       setOpeningId(null);
     }
   }
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16 },
+    titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    title: { fontSize: 20, fontWeight: "700", color: colors.text },
+    logout: { color: colors.muted, fontSize: 13 },
+    newTripButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      backgroundColor: colors.green,
+      borderRadius: 10,
+      marginHorizontal: 16,
+      paddingVertical: 12,
+    },
+    newTripText: { color: "white", fontWeight: "700", fontSize: 14 },
+    card: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
+    cardTitle: { fontSize: 16, fontWeight: "600", color: colors.text },
+    cardSub: { fontSize: 12, color: colors.muted, marginTop: 4 },
+    empty: { color: colors.muted, textAlign: "center", marginTop: 40 },
+    errorBox: { alignItems: "center", marginTop: 40, gap: 10 },
+    retryText: { color: colors.greenDark, fontWeight: "700", fontSize: 13 },
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -89,28 +115,3 @@ export function TripsListScreen({ navigation }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16 },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  title: { fontSize: 20, fontWeight: "700", color: colors.text },
-  logout: { color: colors.muted, fontSize: 13 },
-  newTripButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: colors.green,
-    borderRadius: 10,
-    marginHorizontal: 16,
-    paddingVertical: 12,
-  },
-  newTripText: { color: "white", fontWeight: "700", fontSize: 14 },
-  card: { flexDirection: "row", alignItems: "center", backgroundColor: "white", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
-  cardTitle: { fontSize: 16, fontWeight: "600", color: colors.text },
-  cardSub: { fontSize: 12, color: colors.muted, marginTop: 4 },
-  empty: { color: colors.muted, textAlign: "center", marginTop: 40 },
-  errorBox: { alignItems: "center", marginTop: 40, gap: 10 },
-  retryText: { color: colors.greenDark, fontWeight: "700", fontSize: 13 },
-});
