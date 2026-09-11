@@ -30,11 +30,10 @@ Definido en [`apps/api/prisma/schema.prisma`](apps/api/prisma/schema.prisma). Ta
 
 ## Requisitos previos
 
-- [Node.js 20+](https://nodejs.org/) (ya tenés Node 24 instalado)
+- [Node.js 20+](https://nodejs.org/) 
 - [PostgreSQL](https://www.postgresql.org/download/) corriendo localmente (o una instancia en la nube, ej. [Neon](https://neon.tech) o [Supabase](https://supabase.com), gratis)
 - [VS Code](https://code.visualstudio.com/) con las extensiones: **Prisma**, **ESLint**, **Tailwind CSS IntelliSense**
-- Para probar la app móvil: la app **Expo Go** en tu celular (App Store / Play Store), o Android Studio / Xcode si preferís un emulador
-
+- Para probar la app móvil: la app **Expo Go** en celular (App Store / Play Store)
 ## Puesta en marcha
 
 ### 1. Instalar dependencias
