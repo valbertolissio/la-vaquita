@@ -77,7 +77,7 @@ export function Dashboard() {
     }
   }
 
-  if (!summary) return <p className="text-slate-400">Cargando resumen...</p>;
+  if (!summary) return <p className="text-slate-400 dark:text-slate-400">Cargando resumen...</p>;
 
   const totalTimeSeconds = summary.timeByParticipant.reduce((s, p) => s + p.totalSeconds, 0);
 
@@ -88,19 +88,19 @@ export function Dashboard() {
       <button
         onClick={() => setShowBalanceDetail(true)}
         className={`flex w-full items-center justify-between rounded-2xl border-2 p-6 text-left shadow-sm transition hover:shadow-md ${
-          balancePositive ? "border-vaquita-green/40 bg-vaquita-green/5" : "border-red-300/50 bg-red-50"
+          balancePositive ? "border-vaquita-green/40 bg-vaquita-green/5" : "border-red-300/50 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10"
         }`}
       >
         <div className="flex items-center gap-4">
           <span
             className={`flex h-14 w-14 items-center justify-center rounded-full ${
-              balancePositive ? "bg-vaquita-green/15 text-vaquita-greenDark" : "bg-red-100 text-red-500"
+              balancePositive ? "bg-vaquita-green/15 text-vaquita-greenDark" : "bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-400"
             }`}
           >
             <PiggyBank size={26} strokeWidth={2} />
           </span>
           <div>
-            <p className="text-sm font-medium text-slate-500">Tu saldo</p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Tu saldo</p>
             <p className={`font-display text-4xl font-bold ${balancePositive ? "text-vaquita-greenDark" : "text-red-500"}`}>
               {balancePositive ? "+" : ""}
               {formatMoney(summary.myBalance)}
@@ -108,7 +108,7 @@ export function Dashboard() {
             <p className="mt-0.5 text-xs text-slate-400">Ver el detalle →</p>
           </div>
         </div>
-        <span className={`rounded-full px-4 py-1.5 text-sm font-semibold ${balancePositive ? "bg-vaquita-green/15 text-vaquita-greenDark" : "bg-red-100 text-red-500"}`}>
+        <span className={`rounded-full px-4 py-1.5 text-sm font-semibold ${balancePositive ? "bg-vaquita-green/15 text-vaquita-greenDark" : "bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-400"}`}>
           {balancePositive ? "A tu favor" : "Debés"}
         </span>
       </button>
@@ -125,20 +125,20 @@ export function Dashboard() {
 
       {/* Lo principal de la app: saldar cuentas y ver cuánto tiempo metió cada uno */}
       <div className="grid grid-cols-2 gap-6">
-        <div className="rounded-2xl border-2 border-vaquita-green/30 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border-2 border-vaquita-green/30 bg-white p-5 shadow-sm dark:bg-slate-800">
           <div className="mb-3 flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-vaquita-green/10 text-vaquita-greenDark">
               <HandCoins size={18} strokeWidth={2} />
             </span>
-            <h2 className="text-base font-bold text-slate-800">Para saldar cuentas</h2>
+            <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Para saldar cuentas</h2>
           </div>
           {summary.settlements.length === 0 ? (
             <p className="text-sm text-slate-400">Todos están al día — nadie le debe nada a nadie. 🎉</p>
           ) : (
             <ul className="space-y-2">
               {summary.settlements.map((s, i) => (
-                <li key={i} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-sm">
-                  <span className="flex min-w-0 items-center gap-1.5 font-medium text-slate-700">
+                <li key={i} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-sm dark:bg-slate-700/50">
+                  <span className="flex min-w-0 items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
                     <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] ${avatarColor(s.fromUserId, s.fromAvatarColor).bg} ${avatarColor(s.fromUserId, s.fromAvatarColor).text}`}>
                       {initials(s.fromName)}
                     </span>
@@ -150,7 +150,7 @@ export function Dashboard() {
                     <span className="truncate">{s.toName}</span>
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
-                    <span className="font-bold text-slate-800">{formatMoney(s.amount)}</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-100">{formatMoney(s.amount)}</span>
                     <button
                       onClick={() => markSettlementPaid(i)}
                       disabled={markingId === i}
@@ -167,12 +167,12 @@ export function Dashboard() {
           )}
         </div>
 
-        <div className="rounded-2xl border-2 border-amber-300/40 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border-2 border-amber-300/40 bg-white p-5 shadow-sm dark:bg-slate-800">
           <div className="mb-3 flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10">
               <Clock size={18} strokeWidth={2} />
             </span>
-            <h2 className="text-base font-bold text-slate-800">Tiempo dedicado a tareas</h2>
+            <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Tiempo dedicado a tareas</h2>
           </div>
           {summary.timeByParticipant.length === 0 ? (
             <p className="text-sm text-slate-400">Todavía no hay tareas completadas con tiempo registrado.</p>
@@ -183,15 +183,15 @@ export function Dashboard() {
                 return (
                   <li key={p.userId}>
                     <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-1.5 font-medium text-slate-700">
+                      <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
                         <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(p.userId, p.avatarColor).bg} ${avatarColor(p.userId, p.avatarColor).text}`}>
                           {initials(p.name)}
                         </span>
                         {p.name}
                       </span>
-                      <span className="font-bold text-slate-800">{formatDuration(p.totalSeconds)}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">{formatDuration(p.totalSeconds)}</span>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/50">
                       <div className="h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
                     </div>
                   </li>
@@ -203,8 +203,8 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-6">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 font-semibold text-slate-800">Saldos entre participantes</h2>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Saldos entre participantes</h2>
           <div className="space-y-3">
             {summary.balances.map((b) => (
               <div key={b.userId} className="flex items-center justify-between">
@@ -214,7 +214,7 @@ export function Dashboard() {
                   >
                     {initials(b.name)}
                   </span>
-                  <span className="text-sm text-slate-700">{b.name}</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">{b.name}</span>
                 </div>
                 <span className={`text-sm font-semibold ${b.balance >= 0 ? "text-vaquita-greenDark" : "text-red-500"}`}>
                   {b.balance >= 0 ? "+ " : "- "}
@@ -228,9 +228,9 @@ export function Dashboard() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-800">Últimos gastos</h2>
+            <h2 className="font-semibold text-slate-800 dark:text-slate-100">Últimos gastos</h2>
             <Link to={`/trips/${tripId}/gastos`} className="text-sm font-medium text-blue-600 hover:underline">
               Ver todos
             </Link>
@@ -241,16 +241,16 @@ export function Dashboard() {
               return (
               <div key={e.id} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">
                     <CategoryIcon size={15} strokeWidth={2} />
                   </span>
                   <div>
-                    <p className="font-medium text-slate-800">{e.description}</p>
+                    <p className="font-medium text-slate-800 dark:text-slate-100">{e.description}</p>
                     <p className="text-xs text-slate-400">Pagó: {displayName(e.paidBy)}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-slate-800">{formatMoney(e.amount)}</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-100">{formatMoney(e.amount)}</p>
                   <p className="text-xs text-slate-400">{formatDate(e.expenseDate)}</p>
                 </div>
               </div>
@@ -261,18 +261,18 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-6">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 font-semibold text-slate-800">Tareas</h2>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Tareas</h2>
           <div className="space-y-3">
             {summary.pendingTasks.map((t) => (
               <label key={t.id} className="flex cursor-pointer items-center gap-3 text-sm">
                 <input
                   type="checkbox"
                   onChange={() => toggleTask(t)}
-                  className="h-4 w-4 rounded border-slate-300 accent-vaquita-green"
+                  className="h-4 w-4 rounded border-slate-300 accent-vaquita-green dark:border-slate-600"
                 />
                 <div className="flex-1">
-                  <p className="font-medium text-slate-800">{t.title}</p>
+                  <p className="font-medium text-slate-800 dark:text-slate-100">{t.title}</p>
                   <p className="text-xs text-slate-400">Asignada a: {t.assignedTo ? displayName(t.assignedTo) : "Sin asignar"}</p>
                 </div>
                 {t.dueDate && <span className="text-xs text-slate-400">{formatDate(t.dueDate)}</span>}
@@ -285,8 +285,8 @@ export function Dashboard() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 font-semibold text-slate-800">Gráfico de gastos por categoría</h2>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Gráfico de gastos por categoría</h2>
           {summary.expensesByCategory.length === 0 ? (
             <p className="text-sm text-slate-400">Todavía no hay gastos cargados.</p>
           ) : (
@@ -308,11 +308,11 @@ export function Dashboard() {
                   const pct = summary.totalExpense ? Math.round((c.total / summary.totalExpense) * 100) : 0;
                   return (
                     <li key={c.name} className="flex items-center justify-between">
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color ?? "#94a3b8" }} />
                         {c.name}
                       </span>
-                      <span className="text-slate-500">
+                      <span className="text-slate-500 dark:text-slate-400">
                         {pct}% ({formatMoney(c.total)})
                       </span>
                     </li>

@@ -6,11 +6,12 @@ import { Feather } from "@expo/vector-icons";
 import { useTrip } from "../context/TripContext";
 import { api } from "../lib/api";
 import { Trip, TripSummary, Settlement } from "../lib/types";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 import { displayName, money } from "../lib/format";
 import { Avatar } from "../components/Avatar";
 
 export function ParticipantsScreen({ navigation }: any) {
+  const { colors } = useThemeColors();
   const { trip: tripFromContext } = useTrip();
   const [trip, setTrip] = useState<Trip | null>(tripFromContext);
   const [summary, setSummary] = useState<TripSummary | null>(null);
@@ -43,6 +44,26 @@ export function ParticipantsScreen({ navigation }: any) {
       setMarkingIndex(null);
     }
   }
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    inviteButton: { flexDirection: "row", alignItems: "center", backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+    inviteButtonText: { color: "white", fontWeight: "600", fontSize: 12 },
+    card: { backgroundColor: colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border },
+    row: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.background },
+    name: { fontWeight: "600", color: colors.text },
+    role: { fontSize: 12, color: colors.muted, marginTop: 2 },
+    balance: { fontWeight: "700" },
+    detail: { fontSize: 11, color: colors.muted, marginTop: 2 },
+    sectionTitle: { fontWeight: "700", color: colors.text, marginBottom: 8 },
+    settlementRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 },
+    settlementText: { fontSize: 13, color: colors.text, flex: 1, marginRight: 8 },
+    settlementAmount: { fontWeight: "700", color: colors.text },
+    paidButton: { flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1, borderColor: "rgba(46,158,91,0.4)", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+    paidButtonText: { fontSize: 10, fontWeight: "700", color: colors.greenDark },
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -105,23 +126,3 @@ export function ParticipantsScreen({ navigation }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  inviteButton: { flexDirection: "row", alignItems: "center", backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
-  inviteButtonText: { color: "white", fontWeight: "600", fontSize: 12 },
-  card: { backgroundColor: "white", borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border },
-  row: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.background },
-  name: { fontWeight: "600", color: colors.text },
-  role: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  balance: { fontWeight: "700" },
-  detail: { fontSize: 11, color: colors.muted, marginTop: 2 },
-  sectionTitle: { fontWeight: "700", color: colors.text, marginBottom: 8 },
-  settlementRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 },
-  settlementText: { fontSize: 13, color: colors.text, flex: 1, marginRight: 8 },
-  settlementAmount: { fontWeight: "700", color: colors.text },
-  paidButton: { flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1, borderColor: "rgba(46,158,91,0.4)", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  paidButtonText: { fontSize: 10, fontWeight: "700", color: colors.greenDark },
-});

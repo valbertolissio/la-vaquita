@@ -7,11 +7,12 @@ import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
 import { TripSummary } from "../lib/types";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../context/ThemeContext";
 import { money, formatDate, formatDuration, displayName } from "../lib/format";
 import { Avatar } from "../components/Avatar";
 
 export function HomeScreen({ navigation }: any) {
+  const { colors, mode, toggleTheme } = useThemeColors();
   const { user } = useAuth();
   const { trip, setTrip } = useTrip();
   const [summary, setSummary] = useState<TripSummary | null>(null);
@@ -50,6 +51,7 @@ export function HomeScreen({ navigation }: any) {
     if (!trip) return;
     const options: any[] = [
       { text: "Mi perfil", onPress: () => navigation.navigate("Mi perfil") },
+      { text: mode === "dark" ? "Modo claro" : "Modo oscuro", onPress: toggleTheme },
       { text: "Cambiar de proyecto", onPress: () => setTrip(null) },
     ];
     if (isOrganizer) {
@@ -76,6 +78,43 @@ export function HomeScreen({ navigation }: any) {
     Alert.alert(trip.name, undefined, options);
   }
 
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    banner: { backgroundColor: colors.navy, borderRadius: 18, padding: 18 },
+    bannerHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    bannerTitle: { color: "white", fontSize: 18, fontWeight: "700" },
+    bannerSub: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginTop: 2 },
+    heroBalance: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, borderWidth: 2, padding: 16 },
+    heroBalanceIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+    heroBalanceValue: { fontSize: 26, fontWeight: "800" },
+    heroBalanceLink: { fontSize: 11, color: colors.muted, marginTop: 2 },
+    heroBalanceBadge: { fontSize: 12, fontWeight: "700", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, overflow: "hidden" },
+    quickActions: { flexDirection: "row", justifyContent: "space-between" },
+    quickAction: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 14, padding: 12, flex: 1, marginHorizontal: 4, borderWidth: 1, borderColor: colors.border },
+    quickActionIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: mode === "dark" ? "rgba(46,158,91,0.15)" : "#E8F5EC", alignItems: "center", justifyContent: "center" },
+    quickActionLabel: { fontSize: 11, color: colors.muted, marginTop: 6 },
+    card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
+    highlightCard: { borderWidth: 2 },
+    cardHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+    cardIconWrap: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+    cardHeaderTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
+    cardLabel: { fontSize: 12, color: colors.muted, marginBottom: 6 },
+    cardSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
+    rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    rowTitle: { fontSize: 14, fontWeight: "600", color: colors.text },
+    rowAmount: { fontSize: 14, fontWeight: "700", color: colors.text },
+    settlementRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.background, borderRadius: 10, padding: 10 },
+    settlementNames: { flexDirection: "row", alignItems: "center", gap: 6, flex: 1 },
+    settlementText: { fontSize: 12, fontWeight: "600", color: colors.text, flexShrink: 1 },
+    settlementRight: { alignItems: "flex-end", gap: 4 },
+    settlementAmount: { fontSize: 13, fontWeight: "700", color: colors.text },
+    paidButton: { flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1, borderColor: "rgba(46,158,91,0.4)", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+    paidButtonText: { fontSize: 10, fontWeight: "700", color: colors.greenDark },
+    timeRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+    progressTrack: { height: 6, borderRadius: 3, backgroundColor: colors.background, overflow: "hidden" },
+    progressFill: { height: "100%", backgroundColor: "#f59e0b", borderRadius: 3 },
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
@@ -99,7 +138,12 @@ export function HomeScreen({ navigation }: any) {
             onPress={() => navigation.navigate("Detalle de saldo")}
             style={[
               styles.heroBalance,
-              { backgroundColor: summary.myBalance >= 0 ? "#e8f7ee" : "#fef2f2", borderColor: summary.myBalance >= 0 ? "rgba(46,158,91,0.35)" : "rgba(239,68,68,0.35)" },
+              {
+                backgroundColor: summary.myBalance >= 0
+                  ? mode === "dark" ? "rgba(46,158,91,0.15)" : "#e8f7ee"
+                  : mode === "dark" ? "rgba(239,68,68,0.14)" : "#fef2f2",
+                borderColor: summary.myBalance >= 0 ? "rgba(46,158,91,0.35)" : "rgba(239,68,68,0.35)",
+              },
             ]}
           >
             <View style={[styles.heroBalanceIconWrap, { backgroundColor: summary.myBalance >= 0 ? "rgba(46,158,91,0.15)" : "rgba(239,68,68,0.15)" }]}>
@@ -146,7 +190,7 @@ export function HomeScreen({ navigation }: any) {
             {/* Lo principal: saldar cuentas y tiempo dedicado a tareas */}
             <View style={[styles.card, styles.highlightCard, { borderColor: "rgba(46,158,91,0.3)" }]}>
               <View style={styles.cardHeaderRow}>
-                <View style={[styles.cardIconWrap, { backgroundColor: "#e8f7ee" }]}>
+                <View style={[styles.cardIconWrap, { backgroundColor: mode === "dark" ? "rgba(46,158,91,0.15)" : "#e8f7ee" }]}>
                   <Feather name="repeat" size={16} color={colors.greenDark} />
                 </View>
                 <Text style={styles.cardHeaderTitle}>Para saldar cuentas</Text>
@@ -184,7 +228,7 @@ export function HomeScreen({ navigation }: any) {
 
             <View style={[styles.card, styles.highlightCard, { borderColor: "rgba(217,119,6,0.3)" }]}>
               <View style={styles.cardHeaderRow}>
-                <View style={[styles.cardIconWrap, { backgroundColor: "#fffbeb" }]}>
+                <View style={[styles.cardIconWrap, { backgroundColor: mode === "dark" ? "rgba(245,158,11,0.14)" : "#fffbeb" }]}>
                   <Feather name="clock" size={16} color="#b45309" />
                 </View>
                 <Text style={styles.cardHeaderTitle}>Tiempo dedicado a tareas</Text>
@@ -249,40 +293,3 @@ export function HomeScreen({ navigation }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  banner: { backgroundColor: colors.navy, borderRadius: 18, padding: 18 },
-  bannerHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  bannerTitle: { color: "white", fontSize: 18, fontWeight: "700" },
-  bannerSub: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginTop: 2 },
-  heroBalance: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, borderWidth: 2, padding: 16 },
-  heroBalanceIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
-  heroBalanceValue: { fontSize: 26, fontWeight: "800" },
-  heroBalanceLink: { fontSize: 11, color: colors.muted, marginTop: 2 },
-  heroBalanceBadge: { fontSize: 12, fontWeight: "700", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, overflow: "hidden" },
-  quickActions: { flexDirection: "row", justifyContent: "space-between" },
-  quickAction: { alignItems: "center", backgroundColor: "white", borderRadius: 14, padding: 12, flex: 1, marginHorizontal: 4, borderWidth: 1, borderColor: colors.border },
-  quickActionIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E8F5EC", alignItems: "center", justifyContent: "center" },
-  quickActionLabel: { fontSize: 11, color: colors.muted, marginTop: 6 },
-  card: { backgroundColor: "white", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
-  highlightCard: { borderWidth: 2 },
-  cardHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
-  cardIconWrap: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  cardHeaderTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  cardLabel: { fontSize: 12, color: colors.muted, marginBottom: 6 },
-  cardSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  rowTitle: { fontSize: 14, fontWeight: "600", color: colors.text },
-  rowAmount: { fontSize: 14, fontWeight: "700", color: colors.text },
-  settlementRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.background, borderRadius: 10, padding: 10 },
-  settlementNames: { flexDirection: "row", alignItems: "center", gap: 6, flex: 1 },
-  settlementText: { fontSize: 12, fontWeight: "600", color: colors.text, flexShrink: 1 },
-  settlementRight: { alignItems: "flex-end", gap: 4 },
-  settlementAmount: { fontSize: 13, fontWeight: "700", color: colors.text },
-  paidButton: { flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1, borderColor: "rgba(46,158,91,0.4)", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  paidButtonText: { fontSize: 10, fontWeight: "700", color: colors.greenDark },
-  timeRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  progressTrack: { height: 6, borderRadius: 3, backgroundColor: colors.background, overflow: "hidden" },
-  progressFill: { height: "100%", backgroundColor: "#f59e0b", borderRadius: 3 },
-});
