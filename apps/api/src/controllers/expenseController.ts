@@ -113,15 +113,16 @@ export async function scanReceipt(req: AuthedRequest, res: Response) {
   let text = "";
   let confidence = 0;
   try {
-    // Blanco y negro + contraste: mejora mucho la lectura de tickets reales
-    // (papel térmico, fotos con poca luz o en ángulo) comparado con pasarle
-    // la foto cruda a Tesseract.
+    // Escala de grises + contraste ayuda a Tesseract con fotos reales (poca
+    // luz, ángulo). Un threshold fijo (blanco/negro puro) se probó y
+    // resultó CONTRAPRODUCENTE: en fotos con luz pareja lo pierde todo,
+    // porque compite con la binarización adaptativa que Tesseract ya hace
+    // internamente — mejor dejarle esa parte a él.
     const preprocessed = await sharp(req.file.path)
       .rotate()
       .grayscale()
       .resize({ width: 2400, withoutEnlargement: false })
       .normalize()
-      .threshold(150)
       .toBuffer();
 
     const worker = await createWorker("spa");
