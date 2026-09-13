@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Check, UserPlus } from "lucide-react";
-import { api } from "../lib/api";
-import { Trip, TripSummary } from "../lib/types";
-import { avatarColor, displayName, formatMoney, initials } from "../lib/format";
-import { InviteModal } from "../components/InviteModal";
+import { api } from "../Utilidades/api";
+import { Trip, TripSummary } from "../Utilidades/types";
+import { avatarColor, displayName, formatMoney, initials } from "../Utilidades/format";
+import { useAutoRefresh } from "../Utilidades/useAutoRefresh";
+import { useAuth } from "../Contexto/AuthContext";
+import { InviteModal } from "../Componentes/InviteModal";
 
 export function Participants() {
   const { tripId } = useParams();
+  const { user } = useAuth();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [summary, setSummary] = useState<TripSummary | null>(null);
   const [showInvite, setShowInvite] = useState(false);
@@ -20,6 +23,7 @@ export function Participants() {
   }
 
   useEffect(reload, [tripId]);
+  useAutoRefresh(reload, [tripId]);
 
   async function markSettlementPaid(index: number) {
     const s = summary?.settlements[index];
@@ -95,15 +99,17 @@ export function Participants() {
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   <span className="font-semibold text-slate-800 dark:text-slate-100">{formatMoney(s.amount)}</span>
-                  <button
-                    onClick={() => markSettlementPaid(i)}
-                    disabled={markingId === i}
-                    title="Marcar como pagado"
-                    className="flex items-center gap-1 rounded-full border border-vaquita-green/40 px-2 py-1 text-xs font-medium text-vaquita-greenDark hover:bg-vaquita-green/10 disabled:opacity-60"
-                  >
-                    <Check size={12} strokeWidth={2.5} />
-                    {markingId === i ? "..." : "Pagado"}
-                  </button>
+                  {(s.fromUserId === user?.id || s.toUserId === user?.id) && (
+                    <button
+                      onClick={() => markSettlementPaid(i)}
+                      disabled={markingId === i}
+                      title="Marcar como pagado"
+                      className="flex items-center gap-1 rounded-full border border-vaquita-green/40 px-2 py-1 text-xs font-medium text-vaquita-greenDark hover:bg-vaquita-green/10 disabled:opacity-60"
+                    >
+                      <Check size={12} strokeWidth={2.5} />
+                      {markingId === i ? "..." : "Pagado"}
+                    </button>
+                  )}
                 </span>
               </li>
             ))}

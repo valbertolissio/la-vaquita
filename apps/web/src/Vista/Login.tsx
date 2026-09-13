@@ -1,9 +1,9 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../Contexto/AuthContext";
 import { PENDING_INVITE_KEY } from "./AcceptInvite";
-import { Logo } from "../components/Logo";
-import { ThemeToggle } from "../components/ThemeToggle";
+import { Logo } from "../Componentes/Logo";
+import { ThemeToggle } from "../Componentes/ThemeToggle";
 
 export function Login() {
   const { login } = useAuth();
@@ -62,7 +62,12 @@ export function Login() {
             {loading ? "Ingresando..." : "Ingresar"}
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-3 text-center text-sm">
+          <Link to="/forgot-password" className="font-medium text-vaquita-greenDark hover:underline">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
+        <p className="mt-2 text-center text-sm text-slate-500 dark:text-slate-400">
           ¿No tenés cuenta?{" "}
           <Link to="/register" className="font-medium text-vaquita-greenDark hover:underline">
             Registrate

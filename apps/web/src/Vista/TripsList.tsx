@@ -1,11 +1,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
-import { api } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
-import { Logo } from "../components/Logo";
-import { ThemeToggle } from "../components/ThemeToggle";
-import { displayName } from "../lib/format";
+import { api } from "../Utilidades/api";
+import { useAuth } from "../Contexto/AuthContext";
+import { Logo } from "../Componentes/Logo";
+import { ThemeToggle } from "../Componentes/ThemeToggle";
+import { displayName } from "../Utilidades/format";
 
 export function TripsList() {
   const { user, logout } = useAuth();
@@ -29,7 +29,7 @@ export function TripsList() {
   return (
     <div className="min-h-screen bg-[#f5f3ee] px-6 py-10 dark:bg-slate-900">
       <div className="mx-auto max-w-3xl">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Logo size={36} />
             <div>
@@ -37,7 +37,7 @@ export function TripsList() {
               <p className="text-sm text-slate-500 dark:text-slate-400">Hola, {user ? displayName(user) : ""}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowForm((s) => !s)}
               className="flex items-center gap-1.5 rounded-lg bg-vaquita-green px-4 py-2 text-sm font-semibold text-white hover:bg-vaquita-greenDark"
@@ -101,7 +101,7 @@ export function TripsList() {
             </button>
           ))}
           {trips?.length === 0 && !showForm && (
-            <p className="text-sm text-slate-400">Todavía no creaste ningún proyecto. ¡Arrancá con "+ Nuevo proyecto"!</p>
+            <p className="text-sm text-slate-400">Todavía no creaste ningún proyecto. Empezá con "+ Nuevo proyecto".</p>
           )}
         </div>
       </div>

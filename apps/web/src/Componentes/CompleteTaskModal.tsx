@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, Clock } from "lucide-react";
-import { Task } from "../lib/types";
-import { secondsSince } from "../lib/format";
+import { Task } from "../Utilidades/types";
+import { secondsSince } from "../Utilidades/format";
 
 interface CompleteTaskModalProps {
   task: Task;
@@ -35,7 +35,7 @@ export function CompleteTaskModal({ task, onClose, onConfirm, submitting }: Comp
             <X size={20} />
           </button>
         </div>
-        <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">"{task.title}" — ajustá el tiempo si el cronómetro no arrancó justo a tiempo.</p>
+        <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">"{task.title}". Ajustá el tiempo si el cronómetro no arrancó justo a tiempo.</p>
         <div className="mb-5 flex items-center justify-center gap-2">
           {[
             { value: hours, set: setHours, label: "hs" },

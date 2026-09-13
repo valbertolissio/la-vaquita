@@ -1,9 +1,9 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../Contexto/AuthContext";
 import { PENDING_INVITE_KEY } from "./AcceptInvite";
-import { Logo } from "../components/Logo";
-import { ThemeToggle } from "../components/ThemeToggle";
+import { Logo } from "../Componentes/Logo";
+import { ThemeToggle } from "../Componentes/ThemeToggle";
 
 export function Register() {
   const { register } = useAuth();

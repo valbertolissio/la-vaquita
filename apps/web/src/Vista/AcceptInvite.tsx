@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { api } from "../lib/api";
-import { Logo } from "../components/Logo";
+import { useAuth } from "../Contexto/AuthContext";
+import { api } from "../Utilidades/api";
+import { Logo } from "../Componentes/Logo";
 
 export const PENDING_INVITE_KEY = "la-vaquita-pending-invite";
 

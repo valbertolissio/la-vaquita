@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { X, Undo2 } from "lucide-react";
-import { api } from "../lib/api";
-import { Expense, Payment } from "../lib/types";
-import { displayName, formatDate, formatMoney } from "../lib/format";
+import { api } from "../Utilidades/api";
+import { Expense, Payment } from "../Utilidades/types";
+import { displayName, formatDate, formatMoney, paidBySummary } from "../Utilidades/format";
 
 interface BalanceDetailModalProps {
   tripId: string;
@@ -36,13 +36,14 @@ export function BalanceDetailModal({ tripId, userId, onClose }: BalanceDetailMod
   const expenseRows: BreakdownRow[] = (expenses ?? [])
     .map((expense) => {
       const mySplit = expense.splits.find((s) => s.userId === userId);
-      const paid = expense.paidBy.id === userId ? expense.amount : 0;
+      const myPayment = expense.payers.find((p) => p.userId === userId);
+      const paid = myPayment ? myPayment.amount : 0;
       const owed = mySplit ? mySplit.amountOwed : 0;
       return {
         key: `expense-${expense.id}`,
         date: expense.expenseDate,
         description: expense.description,
-        subtitle: `${formatDate(expense.expenseDate)} · Pagó: ${expense.paidBy.id === userId ? "vos" : displayName(expense.paidBy)}`,
+        subtitle: `${formatDate(expense.expenseDate)} · Pagó: ${paidBySummary(expense.payers, userId)}`,
         amount: paid - owed,
       };
     })
@@ -57,7 +58,7 @@ export function BalanceDetailModal({ tripId, userId, onClose }: BalanceDetailMod
         date: p.createdAt,
         description: iPaid ? `Le pagaste a ${displayName(p.toUser)}` : `${displayName(p.fromUser)} te pagó`,
         subtitle: formatDate(p.createdAt),
-        amount: iPaid ? p.amount : -p.amount,
+        amount: iPaid ? Number(p.amount) : -Number(p.amount),
         payment: p,
       };
     });

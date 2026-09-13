@@ -2,10 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import {
-  Wallet,
   PiggyBank,
   Receipt,
-  ClipboardList,
   UtensilsCrossed,
   Car,
   Home,
@@ -15,14 +13,15 @@ import {
   Clock,
   ArrowRight,
   Check,
+  BarChart3,
 } from "lucide-react";
-import { api } from "../lib/api";
-import { Task, TripSummary } from "../lib/types";
-import { StatCard } from "../components/StatCard";
-import { BalanceDetailModal } from "../components/BalanceDetailModal";
-import { CompleteTaskModal } from "../components/CompleteTaskModal";
-import { useAuth } from "../context/AuthContext";
-import { avatarColor, displayName, formatDate, formatDuration, formatMoney, initials } from "../lib/format";
+import { api } from "../Utilidades/api";
+import { useAutoRefresh } from "../Utilidades/useAutoRefresh";
+import { Task, TripSummary } from "../Utilidades/types";
+import { BalanceDetailModal } from "../Componentes/BalanceDetailModal";
+import { CompleteTaskModal } from "../Componentes/CompleteTaskModal";
+import { useAuth } from "../Contexto/AuthContext";
+import { avatarColor, displayName, formatDate, formatDuration, formatMoney, initials, paidBySummary } from "../Utilidades/format";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Alimentación: UtensilsCrossed,
@@ -45,6 +44,7 @@ export function Dashboard() {
   }
 
   useEffect(reload, [tripId]);
+  useAutoRefresh(reload, [tripId]);
 
   async function toggleTask(task: Task) {
     if (!tripId) return;
@@ -117,28 +117,40 @@ export function Dashboard() {
         <BalanceDetailModal tripId={tripId} userId={user.id} onClose={() => setShowBalanceDetail(false)} />
       )}
 
-      <div className="flex gap-4">
-        <StatCard icon={Wallet} label="Gasto total" value={formatMoney(summary.totalExpense)} sub={`${summary.expenseCount} gastos registrados`} />
-        <StatCard icon={Receipt} label="Pendiente total" value={formatMoney(summary.pendingTotal)} sub="Entre todos" />
-        <StatCard icon={ClipboardList} label="Tareas pendientes" value={String(summary.pendingTaskCount)} sub={`Para hoy: ${summary.pendingTasks.length}`} />
-      </div>
+      <Link
+        to={`/trips/${tripId}/resumen`}
+        className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-vaquita-green/10 text-vaquita-greenDark">
+          <BarChart3 size={18} strokeWidth={2} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-bold text-slate-800 dark:text-slate-100">Resumen detallado</span>
+          <span className="block text-xs text-slate-400">Gasto total, pendiente, aportes y pagos recibidos</span>
+        </span>
+        <ArrowRight size={18} className="shrink-0 text-slate-400" />
+      </Link>
 
       {/* Lo principal de la app: saldar cuentas y ver cuánto tiempo metió cada uno */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div className="rounded-2xl border-2 border-vaquita-green/30 bg-white p-5 shadow-sm dark:bg-slate-800">
           <div className="mb-3 flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-vaquita-green/10 text-vaquita-greenDark">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-vaquita-green/10 text-vaquita-greenDark">
               <HandCoins size={18} strokeWidth={2} />
             </span>
-            <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Para saldar cuentas</h2>
+            <h2 className="min-w-0 text-base font-bold text-slate-800 dark:text-slate-100">Para saldar cuentas</h2>
           </div>
           {summary.settlements.length === 0 ? (
-            <p className="text-sm text-slate-400">Todos están al día — nadie le debe nada a nadie. 🎉</p>
+            <p className="text-sm text-slate-400">Todos están al día. Nadie le debe nada a nadie.</p>
           ) : (
             <ul className="space-y-2">
+              {/* flex-wrap + un ancho mínimo para los nombres: cuando la
+                  tarjeta queda angosta (pantalla chica o dos columnas), el
+                  monto y el botón bajan a un renglón propio en vez de pisarse
+                  con los avatares, que no se achican. */}
               {summary.settlements.map((s, i) => (
-                <li key={i} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-sm dark:bg-slate-700/50">
-                  <span className="flex min-w-0 items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                <li key={i} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 rounded-lg bg-slate-50 px-3 py-2.5 text-sm dark:bg-slate-700/50">
+                  <span className="flex min-w-[7rem] flex-1 items-center gap-1.5 overflow-hidden font-medium text-slate-700 dark:text-slate-300">
                     <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] ${avatarColor(s.fromUserId, s.fromAvatarColor).bg} ${avatarColor(s.fromUserId, s.fromAvatarColor).text}`}>
                       {initials(s.fromName)}
                     </span>
@@ -149,17 +161,19 @@ export function Dashboard() {
                     </span>
                     <span className="truncate">{s.toName}</span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-2">
+                  <span className="ml-auto flex shrink-0 items-center gap-2">
                     <span className="font-bold text-slate-800 dark:text-slate-100">{formatMoney(s.amount)}</span>
-                    <button
-                      onClick={() => markSettlementPaid(i)}
-                      disabled={markingId === i}
-                      title="Marcar como pagado"
-                      className="flex items-center gap-1 rounded-full border border-vaquita-green/40 px-2 py-1 text-xs font-medium text-vaquita-greenDark hover:bg-vaquita-green/10 disabled:opacity-60"
-                    >
-                      <Check size={12} strokeWidth={2.5} />
-                      {markingId === i ? "..." : "Pagado"}
-                    </button>
+                    {(s.fromUserId === user?.id || s.toUserId === user?.id) && (
+                      <button
+                        onClick={() => markSettlementPaid(i)}
+                        disabled={markingId === i}
+                        title="Marcar como pagado"
+                        className="flex items-center gap-1 rounded-full border border-vaquita-green/40 px-2 py-1 text-xs font-medium text-vaquita-greenDark hover:bg-vaquita-green/10 disabled:opacity-60"
+                      >
+                        <Check size={12} strokeWidth={2.5} />
+                        {markingId === i ? "..." : "Pagado"}
+                      </button>
+                    )}
                   </span>
                 </li>
               ))}
@@ -169,10 +183,10 @@ export function Dashboard() {
 
         <div className="rounded-2xl border-2 border-amber-300/40 bg-white p-5 shadow-sm dark:bg-slate-800">
           <div className="mb-3 flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10">
               <Clock size={18} strokeWidth={2} />
             </span>
-            <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Tiempo dedicado a tareas</h2>
+            <h2 className="min-w-0 text-base font-bold text-slate-800 dark:text-slate-100">Tiempo dedicado a tareas</h2>
           </div>
           {summary.timeByParticipant.length === 0 ? (
             <p className="text-sm text-slate-400">Todavía no hay tareas completadas con tiempo registrado.</p>
@@ -182,14 +196,14 @@ export function Dashboard() {
                 const pct = totalTimeSeconds ? Math.round((p.totalSeconds / totalTimeSeconds) * 100) : 0;
                 return (
                   <li key={p.userId}>
-                    <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
-                        <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${avatarColor(p.userId, p.avatarColor).bg} ${avatarColor(p.userId, p.avatarColor).text}`}>
+                    <div className="mb-1 flex items-center justify-between gap-2 text-sm">
+                      <span className="flex min-w-0 items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] ${avatarColor(p.userId, p.avatarColor).bg} ${avatarColor(p.userId, p.avatarColor).text}`}>
                           {initials(p.name)}
                         </span>
-                        {p.name}
+                        <span className="truncate">{p.name}</span>
                       </span>
-                      <span className="font-bold text-slate-800 dark:text-slate-100">{formatDuration(p.totalSeconds)}</span>
+                      <span className="shrink-0 font-bold text-slate-800 dark:text-slate-100">{formatDuration(p.totalSeconds)}</span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/50">
                       <div className="h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
@@ -202,21 +216,21 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <h2 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Saldos entre participantes</h2>
           <div className="space-y-3">
             {summary.balances.map((b) => (
-              <div key={b.userId} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div key={b.userId} className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${avatarColor(b.userId, b.avatarColor).bg} ${avatarColor(b.userId, b.avatarColor).text}`}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${avatarColor(b.userId, b.avatarColor).bg} ${avatarColor(b.userId, b.avatarColor).text}`}
                   >
                     {initials(b.name)}
                   </span>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">{b.name}</span>
+                  <span className="truncate text-sm text-slate-700 dark:text-slate-300">{b.name}</span>
                 </div>
-                <span className={`text-sm font-semibold ${b.balance >= 0 ? "text-vaquita-greenDark" : "text-red-500"}`}>
+                <span className={`shrink-0 text-sm font-semibold ${b.balance >= 0 ? "text-vaquita-greenDark" : "text-red-500"}`}>
                   {b.balance >= 0 ? "+ " : "- "}
                   {formatMoney(Math.abs(b.balance)).replace("-", "")}
                 </span>
@@ -239,17 +253,17 @@ export function Dashboard() {
             {summary.recentExpenses.map((e) => {
               const CategoryIcon = CATEGORY_ICONS[e.category?.name ?? "Otros"] ?? Receipt;
               return (
-              <div key={e.id} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
+              <div key={e.id} className="flex items-center justify-between gap-2 text-sm">
+                <div className="flex min-w-0 items-center gap-2">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">
                     <CategoryIcon size={15} strokeWidth={2} />
                   </span>
-                  <div>
-                    <p className="font-medium text-slate-800 dark:text-slate-100">{e.description}</p>
-                    <p className="text-xs text-slate-400">Pagó: {displayName(e.paidBy)}</p>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-slate-800 dark:text-slate-100">{e.description}</p>
+                    <p className="truncate text-xs text-slate-400">Pagó: {paidBySummary(e.payers)}</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="shrink-0 text-right">
                   <p className="font-semibold text-slate-800 dark:text-slate-100">{formatMoney(e.amount)}</p>
                   <p className="text-xs text-slate-400">{formatDate(e.expenseDate)}</p>
                 </div>
@@ -260,7 +274,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <h2 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Tareas</h2>
           <div className="space-y-3">
@@ -271,11 +285,12 @@ export function Dashboard() {
                   onChange={() => toggleTask(t)}
                   className="h-4 w-4 rounded border-slate-300 accent-vaquita-green dark:border-slate-600"
                 />
-                <div className="flex-1">
+                {/* Sin fecha al lado: la tarea está pendiente, y una fecha acá
+                    se leía como si ya estuviera hecha. */}
+                <div className="min-w-0 flex-1">
                   <p className="font-medium text-slate-800 dark:text-slate-100">{t.title}</p>
                   <p className="text-xs text-slate-400">Asignada a: {t.assignedTo ? displayName(t.assignedTo) : "Sin asignar"}</p>
                 </div>
-                {t.dueDate && <span className="text-xs text-slate-400">{formatDate(t.dueDate)}</span>}
               </label>
             ))}
             {summary.pendingTasks.length === 0 && <p className="text-sm text-slate-400">No hay tareas pendientes.</p>}

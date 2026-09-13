@@ -1,14 +1,17 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { useAuth } from "./context/AuthContext";
-import { Login } from "./pages/Login";
-import { Register } from "./pages/Register";
-import { TripsList } from "./pages/TripsList";
-import { TripLayout } from "./components/TripLayout";
-import { Dashboard } from "./pages/Dashboard";
-import { Expenses } from "./pages/Expenses";
-import { Tasks } from "./pages/Tasks";
-import { Participants } from "./pages/Participants";
-import { AcceptInvite } from "./pages/AcceptInvite";
+import { useAuth } from "./Contexto/AuthContext";
+import { Login } from "./Vista/Login";
+import { Register } from "./Vista/Register";
+import { ForgotPassword } from "./Vista/ForgotPassword";
+import { ResetPassword } from "./Vista/ResetPassword";
+import { TripsList } from "./Vista/TripsList";
+import { TripLayout } from "./Componentes/TripLayout";
+import { Dashboard } from "./Vista/Dashboard";
+import { Resumen } from "./Vista/Resumen";
+import { Expenses } from "./Vista/Expenses";
+import { Tasks } from "./Vista/Tasks";
+import { Participants } from "./Vista/Participants";
+import { AcceptInvite } from "./Vista/AcceptInvite";
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
@@ -22,6 +25,8 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/invite/:token" element={<AcceptInvite />} />
 
       <Route
@@ -42,6 +47,7 @@ export default function App() {
         }
       >
         <Route index element={<Dashboard />} />
+        <Route path="resumen" element={<Resumen />} />
         <Route path="gastos" element={<Expenses />} />
         <Route path="tareas" element={<Tasks />} />
         <Route path="participantes" element={<Participants />} />

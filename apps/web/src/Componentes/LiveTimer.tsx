@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { formatDuration, secondsSince } from "../lib/format";
+import { formatDuration, secondsSince } from "../Utilidades/format";
 
 interface LiveTimerProps {
   startDate: string;

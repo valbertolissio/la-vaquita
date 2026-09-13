@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Plus, Pencil, Trash2, Repeat, Clock } from "lucide-react";
-import { api } from "../lib/api";
-import { Task, Trip } from "../lib/types";
-import { displayName, formatDate, formatDuration } from "../lib/format";
-import { NewTaskModal } from "../components/NewTaskModal";
-import { LiveTimer } from "../components/LiveTimer";
-import { CompleteTaskModal } from "../components/CompleteTaskModal";
+import { api } from "../Utilidades/api";
+import { Task, Trip } from "../Utilidades/types";
+import { displayName, formatDate, formatDuration } from "../Utilidades/format";
+import { useAutoRefresh } from "../Utilidades/useAutoRefresh";
+import { NewTaskModal } from "../Componentes/NewTaskModal";
+import { LiveTimer } from "../Componentes/LiveTimer";
+import { CompleteTaskModal } from "../Componentes/CompleteTaskModal";
 
 export function Tasks() {
   const { tripId } = useParams();
@@ -28,6 +29,7 @@ export function Tasks() {
     reload();
     if (tripId) api.getTrip(tripId).then(setTrip);
   }, [tripId]);
+  useAutoRefresh(reload, [tripId]);
 
   useEffect(() => {
     if (!toast) return;
@@ -56,9 +58,9 @@ export function Tasks() {
       const result = await api.completeTask(tripId, task.id, durationSeconds != null ? { durationSeconds } : undefined);
       const durationText = result.durationSeconds != null ? ` (te llevó ${formatDuration(result.durationSeconds)})` : "";
       if (result.rotated && result.nextAssignee) {
-        setToast(`¡Listo${durationText}! Ahora le toca a ${result.nextAssignee.name}.`);
+        setToast(`Tarea completada${durationText}. Ahora le toca a ${result.nextAssignee.name}.`);
       } else {
-        setToast(`¡Tarea completada${durationText}!`);
+        setToast(`Tarea completada${durationText}.`);
       }
       setCompletingTask(null);
       reload();
@@ -126,7 +128,12 @@ export function Tasks() {
                 </div>
               </div>
             </label>
-            {t.dueDate && <span className="text-xs text-slate-400">{formatDate(t.dueDate)}</span>}
+            {/* Solo las completadas llevan fecha (la del día en que se hicieron).
+                En una pendiente, la fecha de vencimiento acá al lado se leía
+                como si la tarea ya estuviera terminada. */}
+            {t.status === "DONE" && t.completions?.[0] && (
+              <span className="text-xs text-slate-400">{formatDate(t.completions[0].completedAt)}</span>
+            )}
             <div className="flex items-center gap-3 opacity-0 transition group-hover:opacity-100">
               <button onClick={() => setEditingTask(t)} className="text-slate-300 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" title="Editar tarea">
                 <Pencil size={15} strokeWidth={2} />

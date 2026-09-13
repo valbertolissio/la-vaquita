@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Plus, Pencil, Trash2, UtensilsCrossed, Car, Home, PartyPopper, Receipt, LucideIcon } from "lucide-react";
-import { api } from "../lib/api";
-import { Expense, Trip } from "../lib/types";
-import { displayName, formatDate, formatMoney } from "../lib/format";
-import { NewExpenseModal } from "../components/NewExpenseModal";
+import { api } from "../Utilidades/api";
+import { Expense, Trip } from "../Utilidades/types";
+import { formatDate, formatMoney, paidBySummary } from "../Utilidades/format";
+import { useAutoRefresh } from "../Utilidades/useAutoRefresh";
+import { NewExpenseModal } from "../Componentes/NewExpenseModal";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Alimentación: UtensilsCrossed,
@@ -31,6 +32,7 @@ export function Expenses() {
     reload();
     if (tripId) api.getTrip(tripId).then(setTrip);
   }, [tripId]);
+  useAutoRefresh(reload, [tripId]);
 
   async function handleDelete(expenseId: string) {
     if (!tripId) return;
@@ -87,7 +89,7 @@ export function Expenses() {
                       {e.category?.name ?? "Otros"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{displayName(e.paidBy)}</td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{paidBySummary(e.payers)}</td>
                   <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{formatDate(e.expenseDate)}</td>
                   <td className="px-4 py-3 text-right font-semibold text-slate-800 dark:text-slate-100">{formatMoney(e.amount)}</td>
                   <td className="px-4 py-3">

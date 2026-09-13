@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { X, Check } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import { AVATAR_COLOR_KEYS, AvatarColorKey, avatarColor, initials } from "../lib/format";
+import { useAuth } from "../Contexto/AuthContext";
+import { AVATAR_COLOR_KEYS, AvatarColorKey, avatarColor, initials } from "../Utilidades/format";
 
 interface EditProfileModalProps {
   onClose: () => void;

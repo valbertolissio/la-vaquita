@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { api } from "../lib/api";
-import { Task, Trip } from "../lib/types";
-import { displayName } from "../lib/format";
+import { api } from "../Utilidades/api";
+import { Task, Trip } from "../Utilidades/types";
+import { displayName } from "../Utilidades/format";
 
 interface Props {
   tripId: string;
@@ -47,7 +47,7 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
       const payload = {
         title,
         startDate: startDate || undefined,
-        dueDate: scheduleMode === "MANUAL" ? dueDate || undefined : undefined,
+        dueDate: dueDate || undefined,
         timeTracked: scheduleMode === "TIMER",
       };
       if (isEditing) {
@@ -109,7 +109,7 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
 
           {scheduleMode === "MANUAL" ? (
             <div className="flex gap-3">
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Inicio (opcional)</label>
                 <input
                   type="datetime-local"
@@ -118,7 +118,7 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
                 />
               </div>
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Fin</label>
                 <input
                   type="datetime-local"
@@ -129,17 +129,28 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
               </div>
             </div>
           ) : (
-            <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Inicio</label>
-              <input
-                type="datetime-local"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
-              />
-              <p className="mt-1 text-xs text-slate-400">
-                Si lo dejás vacío, arranca a contar desde ahora. Al marcarla como hecha vas a ver cuánto tiempo llevó.
-              </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Inicio</label>
+                <input
+                  type="datetime-local"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
+                />
+                <p className="mt-1 text-xs text-slate-400">
+                  Si lo dejás vacío, arranca a contar desde ahora. Al marcarla como hecha vas a ver cuánto tiempo llevó.
+                </p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Fecha límite (opcional)</label>
+                <input
+                  type="datetime-local"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
+                />
+              </div>
             </div>
           )}
 
@@ -197,7 +208,7 @@ export function NewTaskModal({ tripId, trip, task, onClose, onCreated }: Props) 
             </div>
           ) : (
             <p className="text-xs text-slate-400">
-              Es un turno rotativo — el orden de integrantes no se puede editar acá, solo título y fechas.
+              Es un turno rotativo. El orden de integrantes no se puede editar acá, solo título y fechas.
             </p>
           )}
 

@@ -20,7 +20,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error(body.error ?? "Ocurrió un error inesperado");
   }
   if (res.status === 204) return undefined as T;
-  return res.json();
+  try {
+    return await res.json();
+  } catch {
+    throw new Error("No pudimos conectar con el servidor. Probá de nuevo en unos segundos.");
+  }
 }
 
 export const api = {
@@ -28,6 +32,10 @@ export const api = {
     request<{ token: string; user: any }>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
   login: (data: { email: string; password: string }) =>
     request<{ token: string; user: any }>("/auth/login", { method: "POST", body: JSON.stringify(data) }),
+  forgotPassword: (email: string) =>
+    request<{ message: string }>("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+  resetPassword: (data: { token: string; password: string }) =>
+    request<{ message: string }>("/auth/reset-password", { method: "POST", body: JSON.stringify(data) }),
   me: () => request<any>("/auth/me"),
   updateMe: (data: { name?: string; nickname?: string | null; avatarColor?: string | null }) =>
     request<any>("/auth/me", { method: "PATCH", body: JSON.stringify(data) }),
@@ -38,6 +46,12 @@ export const api = {
   updateTrip: (tripId: string, data: any) =>
     request<any>(`/trips/${tripId}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteTrip: (tripId: string) => request<void>(`/trips/${tripId}`, { method: "DELETE" }),
+  createCategory: (tripId: string, data: { name: string; icon?: string; color?: string }) =>
+    request<any>(`/trips/${tripId}/categories`, { method: "POST", body: JSON.stringify(data) }),
+  updateCategory: (tripId: string, categoryId: string, data: { name?: string; icon?: string | null; color?: string | null }) =>
+    request<any>(`/trips/${tripId}/categories/${categoryId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  deleteCategory: (tripId: string, categoryId: string) =>
+    request<void>(`/trips/${tripId}/categories/${categoryId}`, { method: "DELETE" }),
   getSummary: (tripId: string) => request<any>(`/trips/${tripId}/summary`),
   inviteMember: (tripId: string, email?: string) =>
     request<{ id: string; email: string | null; token: string; emailSent: boolean }>(`/trips/${tripId}/invitations`, {
@@ -57,10 +71,17 @@ export const api = {
   scanReceipt: (tripId: string, file: File) => {
     const form = new FormData();
     form.append("receipt", file);
-    return request<{ description: string; amount: number | null; merchant: string | null; expenseDate: string; receiptUrl: string; confidence: number }>(
-      `/trips/${tripId}/expenses/scan-receipt`,
-      { method: "POST", body: form }
-    );
+    return request<{
+      description: string;
+      amount: number | null;
+      merchant: string | null;
+      expenseDate: string;
+      receiptUrl: string;
+      confidence: number;
+      items: { description: string; amount: number }[];
+      /** true solo si `amount` salió de una línea "TOTAL" del ticket. */
+      totalConfiable: boolean;
+    }>(`/trips/${tripId}/expenses/scan-receipt`, { method: "POST", body: form });
   },
 
   listTasks: (tripId: string) => request<any[]>(`/trips/${tripId}/tasks`),

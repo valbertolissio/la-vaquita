@@ -68,3 +68,14 @@ export function avatarColor(userId: string, override?: string | null) {
 export function displayName(user: { name: string; nickname?: string | null }) {
   return user.nickname?.trim() ? user.nickname : user.name;
 }
+
+/** "Pagó: X" para uno o varios pagadores (ej. una cena donde más de uno puso plata). */
+export function paidBySummary(
+  payers: { userId: string; user: { name: string; nickname?: string | null } }[],
+  currentUserId?: string
+) {
+  const names = payers.map((p) => (p.userId === currentUserId ? "vos" : displayName(p.user)));
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} y ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")} y ${names[names.length - 1]}`;
+}

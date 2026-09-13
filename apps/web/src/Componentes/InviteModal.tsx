@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { X, Share2, MessageCircle, Mail } from "lucide-react";
-import { api } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
-import { displayName } from "../lib/format";
+import { api } from "../Utilidades/api";
+import { useAuth } from "../Contexto/AuthContext";
+import { displayName } from "../Utilidades/format";
 
 interface Props {
   tripId: string;
@@ -93,7 +93,7 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
                 onClick={copyLink}
                 className="shrink-0 rounded-md bg-slate-200 px-2 py-1 font-medium text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
               >
-                {copied ? "¡Copiado!" : "Copiar"}
+                {copied ? "Copiado" : "Copiar"}
               </button>
             </div>
 
@@ -145,7 +145,7 @@ export function InviteModal({ tripId, tripName, onClose }: Props) {
                 <p className="text-sm text-slate-600 dark:text-slate-300">
                   {emailResult.sent
                     ? `Le mandamos un email a ${emailResult.to}.`
-                    : `No pudimos mandar el email a ${emailResult.to} — probá compartir el link directamente.`}
+                    : `No pudimos mandar el email a ${emailResult.to}. Probá compartir el link directamente.`}
                 </p>
               )}
             </div>
