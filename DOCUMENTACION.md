@@ -301,16 +301,18 @@ Ahí hay ruido del borde del papel (`- l -`), el nombre, el código de renglón 
 1. **Reconocer el importe.** El punto, la coma y el espacio se tratan igual como separadores, porque en una impresión gastada el OCR devuelve `43,000 00` o `18 500 00` donde el papel dice 43.000,00. Del último grupo se decide si son centavos (dos dígitos) o miles. Si el número vino todo pegado (`900000`), se toman los dos últimos dígitos como centavos.
 2. **Cortar el nombre.** Se saltea el ruido del borde izquierdo (pedazos impronunciables como `NNN.EW`, detectados por no tener vocales o repetir una letra tres veces), y se corta en el código de renglón (`N°1`, `N5`, `No`) o en el primer token sin letras, que es donde empieza la columna de cantidad.
 3. **Descartar el pie.** Las líneas de subtotal, total, saldo anterior, bultos, vacíos e IVA no son productos y se filtran por palabra clave.
-4. **Rescatar lo ilegible.** Si el monto se lee pero el nombre no, el ítem entra igual como "Sin descripción": perder un gasto de la división es peor que tener que renombrarlo.
+4. **Devolverle el importe a su producto.** Cuando el OCR corre las columnas y el importe cae en el renglón del envase ("BOLSA 27.000,00"), se lo reasigna al producto de arriba, que había quedado sin importe.
+5. **Multiplicar por la cantidad cuando corresponde.** La columna de importes puede traer el precio unitario o el total del renglón. Para decidirlo se prueban las dos interpretaciones y gana la que más se acerca al total impreso. Sin un total legible no se multiplica, para no inflar un gasto.
+6. **Rescatar lo ilegible.** Si el monto se lee pero el nombre no, el ítem entra igual como "Sin descripción": perder un gasto de la división es peor que tener que renombrarlo.
 
 ### 6.3 El total
 
 `amount` puede venir de dos lugares distintos, y no significan lo mismo:
 
 - De una línea que dice **TOTAL**: es el total de verdad. El campo `totalConfiable` viene en `true`.
-- Del **número más grande** del ticket, cuando no hay línea de total legible: es apenas una sugerencia para el formulario. `totalConfiable` viene en `false`.
+- Del **número más grande** del ticket, cuando no hay línea de total legible: es apenas una sugerencia. `totalConfiable` viene en `false`.
 
-El formulario solo compara la suma de los ítems contra el total cuando `totalConfiable` es `true`. Sin esa distinción se mostraba un aviso de "la suma no coincide" comparando contra un número que no era ningún total, que es exactamente el tipo de mensaje que hace desconfiar de toda la pantalla.
+Esa distinción es la que permite decidir si hay que multiplicar por la cantidad: solo se compara contra el total cuando el total es de verdad. El formulario no usa el total para nada más, porque lo que se carga son los ítems.
 
 ### 6.4 Qué esperar
 
