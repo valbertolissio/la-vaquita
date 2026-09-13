@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { avatarColor, initials } from "../lib/format";
+import { avatarColor, initials } from "../Utilidades/format";
 
 interface AvatarProps {
   userId: string;

@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useTrip } from "../context/TripContext";
-import { api } from "../lib/api";
-import { useThemeColors } from "../context/ThemeContext";
+import { useTrip } from "../Contexto/TripContext";
+import { api } from "../Utilidades/api";
+import { useThemeColors } from "../Contexto/ThemeContext";
 import { Feather } from "@expo/vector-icons";
-import { Task } from "../lib/types";
-import { displayName } from "../lib/format";
+import { Task } from "../Utilidades/types";
+import { displayName } from "../Utilidades/format";
 
 function formatShort(d: Date) {
   return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(d);
@@ -50,7 +50,7 @@ export function NewTaskScreen({ navigation, route }: any) {
       const payload = {
         title,
         startDate: startDate?.toISOString(),
-        dueDate: scheduleMode === "MANUAL" ? dueDate?.toISOString() : undefined,
+        dueDate: dueDate?.toISOString(),
         timeTracked: scheduleMode === "TIMER",
       };
       if (isEditing) {
@@ -79,7 +79,7 @@ export function NewTaskScreen({ navigation, route }: any) {
     row: { flexDirection: "row", gap: 10 },
     label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },
     helper: { fontSize: 11, color: colors.muted, marginTop: 4 },
-    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.surface, justifyContent: "center" },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.surface, justifyContent: "center", color: colors.text },
     dateText: { fontSize: 14, color: colors.text },
     doneButton: { alignSelf: "flex-end", padding: 8 },
     doneText: { color: colors.greenDark, fontWeight: "600" },
@@ -140,12 +140,20 @@ export function NewTaskScreen({ navigation, route }: any) {
             </View>
           </View>
         ) : (
-          <View>
-            <Text style={styles.label}>Inicio</Text>
-            <TouchableOpacity style={styles.input} onPress={() => setShowPicker("start")}>
-              <Text style={styles.dateText}>{startDate ? formatShort(startDate) : "Ahora"}</Text>
-            </TouchableOpacity>
-            <Text style={styles.helper}>Al marcarla como hecha vas a ver cuánto tiempo llevó.</Text>
+          <View style={{ gap: 14 }}>
+            <View>
+              <Text style={styles.label}>Inicio</Text>
+              <TouchableOpacity style={styles.input} onPress={() => setShowPicker("start")}>
+                <Text style={styles.dateText}>{startDate ? formatShort(startDate) : "Ahora"}</Text>
+              </TouchableOpacity>
+              <Text style={styles.helper}>Al marcarla como hecha vas a ver cuánto tiempo llevó.</Text>
+            </View>
+            <View>
+              <Text style={styles.label}>Fecha límite (opcional)</Text>
+              <TouchableOpacity style={styles.input} onPress={() => setShowPicker("due")}>
+                <Text style={styles.dateText}>{dueDate ? formatShort(dueDate) : "Elegir"}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -218,7 +226,7 @@ export function NewTaskScreen({ navigation, route }: any) {
             </View>
           </View>
         ) : (
-          <Text style={styles.helper}>Es un turno rotativo — el orden de integrantes no se puede editar acá, solo título y fechas.</Text>
+          <Text style={styles.helper}>Es un turno rotativo. El orden de integrantes no se puede editar acá, solo título y fechas.</Text>
         )}
 
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={submitting}>

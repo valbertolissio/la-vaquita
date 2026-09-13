@@ -3,15 +3,18 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
-import { useTrip } from "../context/TripContext";
-import { api } from "../lib/api";
-import { Trip, TripSummary, Settlement } from "../lib/types";
-import { useThemeColors } from "../context/ThemeContext";
-import { displayName, money } from "../lib/format";
-import { Avatar } from "../components/Avatar";
+import { useTrip } from "../Contexto/TripContext";
+import { useAuth } from "../Contexto/AuthContext";
+import { api } from "../Utilidades/api";
+import { Trip, TripSummary, Settlement } from "../Utilidades/types";
+import { useThemeColors } from "../Contexto/ThemeContext";
+import { displayName, money } from "../Utilidades/format";
+import { useAutoRefresh } from "../Utilidades/useAutoRefresh";
+import { Avatar } from "../Componentes/Avatar";
 
 export function ParticipantsScreen({ navigation }: any) {
   const { colors } = useThemeColors();
+  const { user } = useAuth();
   const { trip: tripFromContext } = useTrip();
   const [trip, setTrip] = useState<Trip | null>(tripFromContext);
   const [summary, setSummary] = useState<TripSummary | null>(null);
@@ -28,6 +31,7 @@ export function ParticipantsScreen({ navigation }: any) {
       reload();
     }, [reload])
   );
+  useAutoRefresh(reload);
 
   if (!tripFromContext) return null;
 
@@ -113,10 +117,12 @@ export function ParticipantsScreen({ navigation }: any) {
                 </Text>
                 <View style={{ alignItems: "flex-end", gap: 4 }}>
                   <Text style={styles.settlementAmount}>{money(s.amount)}</Text>
-                  <TouchableOpacity onPress={() => markSettlementPaid(i)} disabled={markingIndex === i} style={styles.paidButton}>
-                    <Feather name="check" size={11} color={colors.greenDark} />
-                    <Text style={styles.paidButtonText}>{markingIndex === i ? "..." : "Pagado"}</Text>
-                  </TouchableOpacity>
+                  {(s.fromUserId === user?.id || s.toUserId === user?.id) && (
+                    <TouchableOpacity onPress={() => markSettlementPaid(i)} disabled={markingIndex === i} style={styles.paidButton}>
+                      <Feather name="check" size={11} color={colors.greenDark} />
+                      <Text style={styles.paidButtonText}>{markingIndex === i ? "..." : "Pagado"}</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             ))}

@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { Alert, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useTrip } from "../context/TripContext";
-import { useAuth } from "../context/AuthContext";
-import { api, API_URL } from "../lib/api";
-import { useThemeColors } from "../context/ThemeContext";
-import { displayName } from "../lib/format";
+import { useTrip } from "../Contexto/TripContext";
+import { useAuth } from "../Contexto/AuthContext";
+import { api, API_URL } from "../Utilidades/api";
+import { useThemeColors } from "../Contexto/ThemeContext";
+import { displayName } from "../Utilidades/format";
 
 // La API no tiene dominio propio para deep links todavía: se comparte la misma
 // URL que usa la web (/invite/:token), que ya sabe procesar la invitación.
@@ -65,7 +65,7 @@ export function InviteScreen({ navigation }: any) {
     content: { padding: 16, gap: 12 },
     title: { fontSize: 18, fontWeight: "700", color: colors.text },
     label: { fontSize: 12, color: colors.muted, fontWeight: "500" },
-    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 14, backgroundColor: colors.surface },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 14, backgroundColor: colors.surface, color: colors.text },
     helper: { fontSize: 13, color: colors.text },
     linkBox: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.surface },
     linkText: { fontSize: 12, color: colors.muted },
@@ -75,9 +75,11 @@ export function InviteScreen({ navigation }: any) {
     emailToggle: { flexDirection: "row", alignItems: "center" },
     emailToggleText: { color: colors.greenDark, fontWeight: "600", fontSize: 13 },
     emailRow: { flexDirection: "row", gap: 8 },
-    emailInput: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 10, fontSize: 14, backgroundColor: colors.surface },
+    emailInput: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 10, fontSize: 14, backgroundColor: colors.surface, color: colors.text },
     emailSendButton: { backgroundColor: colors.green, borderRadius: 10, paddingHorizontal: 16, alignItems: "center", justifyContent: "center" },
     emailSendText: { color: "white", fontWeight: "700", fontSize: 13 },
+    doneButton: { backgroundColor: colors.border, borderRadius: 10, padding: 14, marginTop: 4 },
+    doneText: { color: colors.text, textAlign: "center", fontWeight: "700" },
     cancelButton: { padding: 10 },
     cancelText: { color: colors.muted, textAlign: "center", fontSize: 13 },
   });
@@ -127,16 +129,22 @@ export function InviteScreen({ navigation }: any) {
               )}
               {emailResult && (
                 <Text style={styles.helper}>
-                  {emailResult.sent ? `Le mandamos un email a ${emailResult.to}.` : `No pudimos mandar el email a ${emailResult.to} — probá el link.`}
+                  {emailResult.sent ? `Le mandamos un email a ${emailResult.to}.` : `No pudimos mandar el email a ${emailResult.to}. Probá el link.`}
                 </Text>
               )}
             </View>
           </>
         )}
 
-        <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelText}>{link ? "Listo" : "Cancelar"}</Text>
-        </TouchableOpacity>
+        {link ? (
+          <TouchableOpacity style={styles.doneButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.doneText}>Listo</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.cancelText}>Cancelar</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );

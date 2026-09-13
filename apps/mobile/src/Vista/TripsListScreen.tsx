@@ -3,11 +3,11 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity,
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
-import { api } from "../lib/api";
-import { useTrip } from "../context/TripContext";
-import { useAuth } from "../context/AuthContext";
-import { useThemeColors } from "../context/ThemeContext";
-import { Logo } from "../components/Logo";
+import { api } from "../Utilidades/api";
+import { useTrip } from "../Contexto/TripContext";
+import { useAuth } from "../Contexto/AuthContext";
+import { useThemeColors } from "../Contexto/ThemeContext";
+import { Logo } from "../Componentes/Logo";
 
 export function TripsListScreen({ navigation }: any) {
   const { colors } = useThemeColors();

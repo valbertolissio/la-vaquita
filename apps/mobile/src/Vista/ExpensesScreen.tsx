@@ -3,12 +3,13 @@ import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
-import { useTrip } from "../context/TripContext";
-import { api } from "../lib/api";
-import { Expense } from "../lib/types";
-import { useThemeColors } from "../context/ThemeContext";
-import { money, formatDate, displayName } from "../lib/format";
-import { Avatar } from "../components/Avatar";
+import { useTrip } from "../Contexto/TripContext";
+import { api } from "../Utilidades/api";
+import { Expense } from "../Utilidades/types";
+import { useThemeColors } from "../Contexto/ThemeContext";
+import { money, formatDate, displayName, paidBySummary } from "../Utilidades/format";
+import { useAutoRefresh } from "../Utilidades/useAutoRefresh";
+import { Avatar } from "../Componentes/Avatar";
 
 const CATEGORY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   Alimentación: "coffee",
@@ -32,6 +33,7 @@ export function ExpensesScreen({ navigation }: any) {
       reload();
     }, [reload])
   );
+  useAutoRefresh(reload);
 
   if (!trip) return null;
 
@@ -101,8 +103,15 @@ export function ExpensesScreen({ navigation }: any) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>{item.description}</Text>
                 <View style={styles.paidByRow}>
-                  <Avatar userId={item.paidBy.id} name={displayName(item.paidBy)} color={item.paidBy.avatarColor} size={16} />
-                  <Text style={styles.cardSub}> Pagó: {displayName(item.paidBy)}</Text>
+                  {item.payers[0] && (
+                    <Avatar
+                      userId={item.payers[0].user.id}
+                      name={displayName(item.payers[0].user)}
+                      color={item.payers[0].user.avatarColor}
+                      size={16}
+                    />
+                  )}
+                  <Text style={styles.cardSub}> Pagó: {paidBySummary(item.payers)}</Text>
                 </View>
               </View>
               <View style={{ alignItems: "flex-end" }}>

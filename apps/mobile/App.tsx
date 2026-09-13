@@ -4,23 +4,26 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { AuthProvider, useAuth } from "./src/context/AuthContext";
-import { TripProvider, useTrip } from "./src/context/TripContext";
-import { ThemeProvider, useThemeColors } from "./src/context/ThemeContext";
-import { LoginScreen } from "./src/screens/LoginScreen";
-import { RegisterScreen } from "./src/screens/RegisterScreen";
-import { TripsListScreen } from "./src/screens/TripsListScreen";
-import { NewTripScreen } from "./src/screens/NewTripScreen";
-import { HomeScreen } from "./src/screens/HomeScreen";
-import { ExpensesScreen } from "./src/screens/ExpensesScreen";
-import { TasksScreen } from "./src/screens/TasksScreen";
-import { ParticipantsScreen } from "./src/screens/ParticipantsScreen";
-import { NewExpenseScreen } from "./src/screens/NewExpenseScreen";
-import { NewTaskScreen } from "./src/screens/NewTaskScreen";
-import { InviteScreen } from "./src/screens/InviteScreen";
-import { EditTripScreen } from "./src/screens/EditTripScreen";
-import { BalanceDetailScreen } from "./src/screens/BalanceDetailScreen";
-import { EditProfileScreen } from "./src/screens/EditProfileScreen";
+import { AuthProvider, useAuth } from "./src/Contexto/AuthContext";
+import { TripProvider, useTrip } from "./src/Contexto/TripContext";
+import { ThemeProvider, useThemeColors } from "./src/Contexto/ThemeContext";
+import { LoginScreen } from "./src/Vista/LoginScreen";
+import { RegisterScreen } from "./src/Vista/RegisterScreen";
+import { ForgotPasswordScreen } from "./src/Vista/ForgotPasswordScreen";
+import { TripsListScreen } from "./src/Vista/TripsListScreen";
+import { NewTripScreen } from "./src/Vista/NewTripScreen";
+import { HomeScreen } from "./src/Vista/HomeScreen";
+import { ExpensesScreen } from "./src/Vista/ExpensesScreen";
+import { TasksScreen } from "./src/Vista/TasksScreen";
+import { ParticipantsScreen } from "./src/Vista/ParticipantsScreen";
+import { NewExpenseScreen } from "./src/Vista/NewExpenseScreen";
+import { NewTaskScreen } from "./src/Vista/NewTaskScreen";
+import { InviteScreen } from "./src/Vista/InviteScreen";
+import { EditTripScreen } from "./src/Vista/EditTripScreen";
+import { BalanceDetailScreen } from "./src/Vista/BalanceDetailScreen";
+import { EditProfileScreen } from "./src/Vista/EditProfileScreen";
+import { SettingsScreen } from "./src/Vista/SettingsScreen";
+import { ResumenScreen } from "./src/Vista/ResumenScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -78,6 +81,7 @@ function RootNavigator() {
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           </>
         ) : !trip ? (
           <>
@@ -93,6 +97,8 @@ function RootNavigator() {
             <Stack.Screen name="Editar proyecto" component={EditTripScreen} options={{ headerShown: false, presentation: "modal" }} />
             <Stack.Screen name="Detalle de saldo" component={BalanceDetailScreen} options={{ headerShown: false, presentation: "modal" }} />
             <Stack.Screen name="Mi perfil" component={EditProfileScreen} options={{ headerShown: false, presentation: "modal" }} />
+            <Stack.Screen name="Ajustes" component={SettingsScreen} options={{ headerShown: false, presentation: "modal" }} />
+            <Stack.Screen name="Resumen" component={ResumenScreen} options={{ headerShown: false, presentation: "modal" }} />
           </>
         )}
       </Stack.Navigator>

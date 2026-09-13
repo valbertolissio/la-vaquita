@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { Trip } from "../lib/types";
+import { Trip } from "../Utilidades/types";
 
 interface TripContextValue {
   trip: Trip | null;

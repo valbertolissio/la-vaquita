@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useAuth } from "../context/AuthContext";
-import { AVATAR_COLOR_KEYS, AvatarColorKey, avatarColor, initials } from "../lib/format";
-import { useThemeColors } from "../context/ThemeContext";
+import { useAuth } from "../Contexto/AuthContext";
+import { AVATAR_COLOR_KEYS, AvatarColorKey, avatarColor, initials } from "../Utilidades/format";
+import { useThemeColors } from "../Contexto/ThemeContext";
 
 export function EditProfileScreen({ navigation }: any) {
   const { colors } = useThemeColors();
@@ -39,7 +39,7 @@ export function EditProfileScreen({ navigation }: any) {
     previewCircle: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
     previewText: { color: "white", fontSize: 22, fontWeight: "700" },
     label: { fontSize: 12, color: colors.muted, fontWeight: "500" },
-    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.surface },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.surface, color: colors.text },
     swatchRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
     swatch: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
     swatchSelected: { borderWidth: 3, borderColor: colors.text },

@@ -3,16 +3,17 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
-import { api } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
-import { useTrip } from "../context/TripContext";
-import { TripSummary } from "../lib/types";
-import { useThemeColors } from "../context/ThemeContext";
-import { money, formatDate, formatDuration, displayName } from "../lib/format";
-import { Avatar } from "../components/Avatar";
+import { api } from "../Utilidades/api";
+import { useAuth } from "../Contexto/AuthContext";
+import { useTrip } from "../Contexto/TripContext";
+import { TripSummary } from "../Utilidades/types";
+import { useThemeColors } from "../Contexto/ThemeContext";
+import { money, formatDate, formatDuration, displayName, paidBySummary } from "../Utilidades/format";
+import { useAutoRefresh } from "../Utilidades/useAutoRefresh";
+import { Avatar } from "../Componentes/Avatar";
 
 export function HomeScreen({ navigation }: any) {
-  const { colors, mode, toggleTheme } = useThemeColors();
+  const { colors, mode } = useThemeColors();
   const { user } = useAuth();
   const { trip, setTrip } = useTrip();
   const [summary, setSummary] = useState<TripSummary | null>(null);
@@ -27,6 +28,7 @@ export function HomeScreen({ navigation }: any) {
       reload();
     }, [reload])
   );
+  useAutoRefresh(reload);
 
   if (!trip) return null;
 
@@ -44,45 +46,15 @@ export function HomeScreen({ navigation }: any) {
     }
   }
 
-  const isOrganizer = trip.members.find((m) => m.userId === user?.id)?.role === "ORGANIZER";
   const totalTimeSeconds = summary?.timeByParticipant.reduce((s, p) => s + p.totalSeconds, 0) ?? 0;
-
-  function showOptions() {
-    if (!trip) return;
-    const options: any[] = [
-      { text: "Mi perfil", onPress: () => navigation.navigate("Mi perfil") },
-      { text: mode === "dark" ? "Modo claro" : "Modo oscuro", onPress: toggleTheme },
-      { text: "Cambiar de proyecto", onPress: () => setTrip(null) },
-    ];
-    if (isOrganizer) {
-      options.push({ text: "Editar proyecto", onPress: () => navigation.navigate("Editar proyecto") });
-      options.push({
-        text: "Eliminar proyecto",
-        style: "destructive",
-        onPress: () => {
-          Alert.alert("Eliminar proyecto", `¿Seguro que querés eliminar "${trip!.name}"? Esta acción no se puede deshacer.`, [
-            { text: "Cancelar", style: "cancel" },
-            {
-              text: "Eliminar",
-              style: "destructive",
-              onPress: async () => {
-                await api.deleteTrip(trip!.id);
-                setTrip(null);
-              },
-            },
-          ]);
-        },
-      });
-    }
-    options.push({ text: "Cancelar", style: "cancel" });
-    Alert.alert(trip.name, undefined, options);
-  }
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     banner: { backgroundColor: colors.navy, borderRadius: 18, padding: 18 },
     bannerHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-    bannerTitle: { color: "white", fontSize: 18, fontWeight: "700" },
+    bannerBackButton: { flexDirection: "row", alignItems: "center", gap: 5 },
+    bannerBackText: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: "600" },
+    bannerTitle: { color: "white", fontSize: 18, fontWeight: "700", marginTop: 10 },
     bannerSub: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginTop: 2 },
     heroBalance: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, borderWidth: 2, padding: 16 },
     heroBalanceIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
@@ -97,7 +69,7 @@ export function HomeScreen({ navigation }: any) {
     highlightCard: { borderWidth: 2 },
     cardHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
     cardIconWrap: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-    cardHeaderTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
+    cardHeaderTitle: { fontSize: 14, fontWeight: "700", color: colors.text, flex: 1 },
     cardLabel: { fontSize: 12, color: colors.muted, marginBottom: 6 },
     cardSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
     rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
@@ -113,6 +85,7 @@ export function HomeScreen({ navigation }: any) {
     timeRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
     progressTrack: { height: 6, borderRadius: 3, backgroundColor: colors.background, overflow: "hidden" },
     progressFill: { height: "100%", backgroundColor: "#f59e0b", borderRadius: 3 },
+    resumenLink: { flexDirection: "row", alignItems: "center", gap: 10 },
   });
 
   return (
@@ -120,11 +93,15 @@ export function HomeScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
         <View style={styles.banner}>
           <View style={styles.bannerHeader}>
-            <Text style={styles.bannerTitle}>{trip.name}</Text>
-            <TouchableOpacity onPress={showOptions} hitSlop={10}>
-              <Feather name="more-horizontal" size={20} color="white" />
+            <TouchableOpacity style={styles.bannerBackButton} onPress={() => setTrip(null)} hitSlop={10}>
+              <Feather name="grid" size={16} color="white" />
+              <Text style={styles.bannerBackText}>Proyectos</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate("Ajustes")} hitSlop={10}>
+              <Feather name="settings" size={20} color="white" />
             </TouchableOpacity>
           </View>
+          <Text style={styles.bannerTitle}>{trip.name}</Text>
           <Text style={styles.bannerSub}>
             {new Date(trip.startDate).toLocaleDateString("es-AR", { day: "2-digit", month: "long" })} -{" "}
             {new Date(trip.endDate).toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })}
@@ -187,6 +164,17 @@ export function HomeScreen({ navigation }: any) {
 
         {summary && (
           <>
+            <TouchableOpacity style={[styles.card, styles.resumenLink]} onPress={() => navigation.navigate("Resumen")}>
+              <View style={styles.cardIconWrap}>
+                <Feather name="bar-chart-2" size={16} color={colors.greenDark} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardHeaderTitle}>Resumen detallado</Text>
+                <Text style={styles.cardSub}>Gasto total, pendiente, aportes y pagos recibidos</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={colors.muted} />
+            </TouchableOpacity>
+
             {/* Lo principal: saldar cuentas y tiempo dedicado a tareas */}
             <View style={[styles.card, styles.highlightCard, { borderColor: "rgba(46,158,91,0.3)" }]}>
               <View style={styles.cardHeaderRow}>
@@ -196,7 +184,7 @@ export function HomeScreen({ navigation }: any) {
                 <Text style={styles.cardHeaderTitle}>Para saldar cuentas</Text>
               </View>
               {summary.settlements.length === 0 ? (
-                <Text style={styles.cardSub}>Todos están al día — nadie le debe nada a nadie.</Text>
+                <Text style={styles.cardSub}>Todos están al día. Nadie le debe nada a nadie.</Text>
               ) : (
                 <View style={{ gap: 8 }}>
                   {summary.settlements.map((s, i) => (
@@ -211,14 +199,16 @@ export function HomeScreen({ navigation }: any) {
                       </View>
                       <View style={styles.settlementRight}>
                         <Text style={styles.settlementAmount}>{money(s.amount)}</Text>
-                        <TouchableOpacity
-                          onPress={() => markSettlementPaid(i)}
-                          disabled={markingIndex === i}
-                          style={styles.paidButton}
-                        >
-                          <Feather name="check" size={11} color={colors.greenDark} />
-                          <Text style={styles.paidButtonText}>{markingIndex === i ? "..." : "Pagado"}</Text>
-                        </TouchableOpacity>
+                        {(s.fromUserId === user?.id || s.toUserId === user?.id) && (
+                          <TouchableOpacity
+                            onPress={() => markSettlementPaid(i)}
+                            disabled={markingIndex === i}
+                            style={styles.paidButton}
+                          >
+                            <Feather name="check" size={11} color={colors.greenDark} />
+                            <Text style={styles.paidButtonText}>{markingIndex === i ? "..." : "Pagado"}</Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   ))}
@@ -264,7 +254,7 @@ export function HomeScreen({ navigation }: any) {
                 <View style={styles.rowBetween}>
                   <View>
                     <Text style={styles.rowTitle}>{summary.recentExpenses[0].description}</Text>
-                    <Text style={styles.cardSub}>Pagó: {displayName(summary.recentExpenses[0].paidBy)}</Text>
+                    <Text style={styles.cardSub}>Pagó: {paidBySummary(summary.recentExpenses[0].payers)}</Text>
                   </View>
                   <Text style={styles.rowAmount}>{money(summary.recentExpenses[0].amount)}</Text>
                 </View>
@@ -274,6 +264,8 @@ export function HomeScreen({ navigation }: any) {
             {summary.pendingTasks[0] && (
               <View style={styles.card}>
                 <Text style={styles.cardLabel}>Próxima tarea</Text>
+                {/* Sin fecha al lado: la tarea está pendiente, y una fecha acá
+                    se leía como si ya estuviera hecha. */}
                 <View style={styles.rowBetween}>
                   <View>
                     <Text style={styles.rowTitle}>{summary.pendingTasks[0].title}</Text>
@@ -281,9 +273,6 @@ export function HomeScreen({ navigation }: any) {
                       Asignada a: {summary.pendingTasks[0].assignedTo ? displayName(summary.pendingTasks[0].assignedTo) : "Sin asignar"}
                     </Text>
                   </View>
-                  {summary.pendingTasks[0].dueDate && (
-                    <Text style={styles.rowAmount}>{formatDate(summary.pendingTasks[0].dueDate)}</Text>
-                  )}
                 </View>
               </View>
             )}

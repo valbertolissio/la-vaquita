@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../context/AuthContext";
-import { useThemeColors } from "../context/ThemeContext";
-import { Logo } from "../components/Logo";
+import { useAuth } from "../Contexto/AuthContext";
+import { useThemeColors } from "../Contexto/ThemeContext";
+import { Logo } from "../Componentes/Logo";
 
 export function LoginScreen({ navigation }: any) {
   const { login } = useAuth();
@@ -29,7 +29,7 @@ export function LoginScreen({ navigation }: any) {
     logoWrap: { alignItems: "center" },
     title: { fontSize: 22, fontWeight: "700", textAlign: "center", color: colors.text, marginTop: 4 },
     subtitle: { fontSize: 13, textAlign: "center", color: colors.muted, marginBottom: 20 },
-    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, marginBottom: 10, fontSize: 14 },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, marginBottom: 10, fontSize: 14, color: colors.text },
     button: { backgroundColor: colors.green, borderRadius: 10, padding: 14, marginTop: 6 },
     buttonText: { color: "white", textAlign: "center", fontWeight: "600" },
     linkWrap: { marginTop: 14 },
@@ -57,6 +57,10 @@ export function LoginScreen({ navigation }: any) {
 
         <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
           <Text style={styles.buttonText}>{loading ? "Ingresando..." : "Ingresar"}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")} style={styles.linkWrap}>
+          <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate("Register")} style={styles.linkWrap}>

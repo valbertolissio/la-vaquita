@@ -1,14 +1,14 @@
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
-import { api } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
-import { useTrip } from "../context/TripContext";
-import { Expense, Payment } from "../lib/types";
-import { useThemeColors } from "../context/ThemeContext";
-import { displayName, formatDate, money } from "../lib/format";
+import { api } from "../Utilidades/api";
+import { useAuth } from "../Contexto/AuthContext";
+import { useTrip } from "../Contexto/TripContext";
+import { Expense, Payment } from "../Utilidades/types";
+import { useThemeColors } from "../Contexto/ThemeContext";
+import { displayName, formatDate, money, paidBySummary } from "../Utilidades/format";
 
 interface BreakdownRow {
   key: string;
@@ -21,6 +21,7 @@ interface BreakdownRow {
 
 export function BalanceDetailScreen({ navigation }: any) {
   const { colors } = useThemeColors();
+  const insets = useSafeAreaInsets();
   const { trip } = useTrip();
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
@@ -46,13 +47,14 @@ export function BalanceDetailScreen({ navigation }: any) {
   const expenseRows: BreakdownRow[] = (expenses ?? [])
     .map((expense) => {
       const mySplit = expense.splits.find((s) => s.userId === user.id);
-      const paid = expense.paidBy.id === user.id ? expense.amount : 0;
+      const myPayment = expense.payers.find((p) => p.userId === user.id);
+      const paid = myPayment ? myPayment.amount : 0;
       const owed = mySplit ? mySplit.amountOwed : 0;
       return {
         key: `expense-${expense.id}`,
         date: expense.expenseDate,
         description: expense.description,
-        subtitle: `${formatDate(expense.expenseDate)} · Pagó: ${expense.paidBy.id === user.id ? "vos" : displayName(expense.paidBy)}`,
+        subtitle: `${formatDate(expense.expenseDate)} · Pagó: ${paidBySummary(expense.payers, user.id)}`,
         amount: paid - owed,
       };
     })
@@ -67,7 +69,7 @@ export function BalanceDetailScreen({ navigation }: any) {
         date: p.createdAt,
         description: iPaid ? `Le pagaste a ${displayName(p.toUser)}` : `${displayName(p.fromUser)} te pagó`,
         subtitle: formatDate(p.createdAt),
-        amount: iPaid ? p.amount : -p.amount,
+        amount: iPaid ? Number(p.amount) : -Number(p.amount),
         payment: p,
       };
     });
@@ -99,13 +101,22 @@ export function BalanceDetailScreen({ navigation }: any) {
     rowTitle: { fontSize: 14, fontWeight: "600", color: colors.text },
     rowSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
     rowAmount: { fontSize: 14, fontWeight: "700" },
-    footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
+    footer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: 16,
+      paddingBottom: 16 + insets.bottom,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.surface,
+    },
     footerLabel: { fontSize: 13, fontWeight: "600", color: colors.muted },
     footerAmount: { fontSize: 18, fontWeight: "800" },
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Cómo se compone tu saldo</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>

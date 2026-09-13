@@ -37,12 +37,19 @@ export interface ExpenseSplit {
   user: User;
 }
 
+export interface ExpensePayer {
+  id: string;
+  userId: string;
+  amount: number;
+  user: User;
+}
+
 export interface Expense {
   id: string;
   description: string;
   amount: number;
   expenseDate: string;
-  paidBy: User;
+  payers: ExpensePayer[];
   category: Category | null;
   splits: ExpenseSplit[];
 }
@@ -106,6 +113,9 @@ export interface TripSummary {
   totalExpense: number;
   expenseCount: number;
   myBalance: number;
+  myContribution: number;
+  othersContribution: number;
+  paidToMe: number;
   pendingTotal: number;
   pendingTaskCount: number;
   balances: MemberBalance[];

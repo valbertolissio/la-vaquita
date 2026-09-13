@@ -3,13 +3,14 @@ import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
-import { useTrip } from "../context/TripContext";
-import { api } from "../lib/api";
-import { Task } from "../lib/types";
-import { useThemeColors } from "../context/ThemeContext";
-import { formatDate, formatDuration, displayName } from "../lib/format";
-import { LiveTimer } from "../components/LiveTimer";
-import { CompleteTaskModal } from "../components/CompleteTaskModal";
+import { useTrip } from "../Contexto/TripContext";
+import { api } from "../Utilidades/api";
+import { Task } from "../Utilidades/types";
+import { useThemeColors } from "../Contexto/ThemeContext";
+import { formatDate, formatDuration, displayName } from "../Utilidades/format";
+import { useAutoRefresh } from "../Utilidades/useAutoRefresh";
+import { LiveTimer } from "../Componentes/LiveTimer";
+import { CompleteTaskModal } from "../Componentes/CompleteTaskModal";
 
 export function TasksScreen({ navigation }: any) {
   const { colors, mode } = useThemeColors();
@@ -28,6 +29,7 @@ export function TasksScreen({ navigation }: any) {
       reload();
     }, [reload])
   );
+  useAutoRefresh(reload);
 
   useEffect(() => {
     if (!toast) return;
@@ -58,9 +60,9 @@ export function TasksScreen({ navigation }: any) {
       const result = await api.completeTask(trip.id, task.id, durationSeconds != null ? { durationSeconds } : undefined);
       const durationText = result.durationSeconds != null ? ` (te llevó ${formatDuration(result.durationSeconds)})` : "";
       if (result.rotated && result.nextAssignee) {
-        setToast(`¡Listo${durationText}! Ahora le toca a ${result.nextAssignee.name}.`);
+        setToast(`Tarea completada${durationText}. Ahora le toca a ${result.nextAssignee.name}.`);
       } else {
-        setToast(`¡Tarea completada${durationText}!`);
+        setToast(`Tarea completada${durationText}.`);
       }
       setCompletingTask(null);
       reload();
@@ -162,7 +164,12 @@ export function TasksScreen({ navigation }: any) {
                 )}
               </View>
             </TouchableOpacity>
-            {item.dueDate && <Text style={styles.dueDate}>{formatDate(item.dueDate)}</Text>}
+            {/* Solo las completadas llevan fecha (la del día en que se hicieron).
+                En una pendiente, la fecha de vencimiento acá al lado se leía
+                como si la tarea ya estuviera terminada. */}
+            {item.status === "DONE" && item.completions?.[0] && (
+              <Text style={styles.dueDate}>{formatDate(item.completions[0].completedAt)}</Text>
+            )}
             <TouchableOpacity onPress={() => confirmDelete(item)} hitSlop={8} style={styles.deleteButton}>
               <Feather name="trash-2" size={16} color={colors.danger} />
             </TouchableOpacity>

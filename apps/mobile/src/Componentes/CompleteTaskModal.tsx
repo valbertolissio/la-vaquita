@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { Task } from "../lib/types";
-import { secondsSince } from "../lib/format";
-import { useThemeColors } from "../context/ThemeContext";
+import { Task } from "../Utilidades/types";
+import { secondsSince } from "../Utilidades/format";
+import { useThemeColors } from "../Contexto/ThemeContext";
 
 interface Props {
   task: Task;
@@ -55,7 +55,7 @@ export function CompleteTaskModal({ task, onClose, onConfirm, submitting }: Prop
               <Feather name="x" size={20} color={colors.text} />
             </TouchableOpacity>
           </View>
-          <Text style={styles.subtitle}>"{task.title}" — ajustá el tiempo si el cronómetro no arrancó justo a tiempo.</Text>
+          <Text style={styles.subtitle}>"{task.title}". Ajustá el tiempo si el cronómetro no arrancó justo a tiempo.</Text>
           <View style={styles.fieldsRow}>
             {[
               { value: hours, set: setHours, label: "hs" },

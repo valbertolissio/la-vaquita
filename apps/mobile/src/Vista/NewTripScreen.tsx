@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { api } from "../lib/api";
-import { useTrip } from "../context/TripContext";
-import { useThemeColors } from "../context/ThemeContext";
+import { api } from "../Utilidades/api";
+import { useTrip } from "../Contexto/TripContext";
+import { useThemeColors } from "../Contexto/ThemeContext";
 
 function formatShort(d: Date) {
   return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", year: "numeric" }).format(d);
@@ -49,7 +49,7 @@ export function NewTripScreen({ navigation }: any) {
     title: { fontSize: 18, fontWeight: "700", color: colors.text },
     row: { flexDirection: "row", gap: 10 },
     label: { fontSize: 12, color: colors.muted, marginBottom: 6, fontWeight: "500" },
-    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.surface, justifyContent: "center" },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.surface, justifyContent: "center", color: colors.text },
     dateText: { fontSize: 14, color: colors.text },
     doneButton: { alignSelf: "flex-end", padding: 8 },
     doneText: { color: colors.greenDark, fontWeight: "600" },

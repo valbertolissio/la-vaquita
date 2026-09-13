@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Text, TextStyle } from "react-native";
-import { formatDuration, secondsSince } from "../lib/format";
+import { formatDuration, secondsSince } from "../Utilidades/format";
 
 interface LiveTimerProps {
   startDate: string;
