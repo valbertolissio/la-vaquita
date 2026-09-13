@@ -2,30 +2,30 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import { api } from "../Utilidades/api";
-import { Expense, Payment, TripSummary } from "../Utilidades/types";
-import { useAuth } from "../Contexto/AuthContext";
-import { avatarColor, displayName, formatDate, formatDuration, formatMoney, initials, paidBySummary } from "../Utilidades/format";
-import { useAutoRefresh } from "../Utilidades/useAutoRefresh";
+import { Gasto, Pago, ResumenDelProyecto } from "../Utilidades/tipos";
+import { useSesion } from "../Contexto/ContextoDeSesion";
+import { colorDeAvatar, nombreVisible, formatearFecha, formatearDuracion, formatearPlata, iniciales, resumenDePagadores } from "../Utilidades/formato";
+import { useActualizacionAutomatica } from "../Utilidades/useActualizacionAutomatica";
 
 type Seccion = "gasto" | "pendiente" | "aportes" | "pagos" | null;
 
 export function Resumen() {
   const { tripId } = useParams();
-  const { user } = useAuth();
-  const [summary, setSummary] = useState<TripSummary | null>(null);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const { user } = useSesion();
+  const [summary, setSummary] = useState<ResumenDelProyecto | null>(null);
+  const [expenses, setExpenses] = useState<Gasto[]>([]);
+  const [payments, setPayments] = useState<Pago[]>([]);
   const [abiertas, setAbiertas] = useState<Record<string, boolean>>({});
 
   function reload() {
     if (!tripId) return;
-    api.getSummary(tripId).then(setSummary);
-    api.listExpenses(tripId).then(setExpenses);
-    api.listPayments(tripId).then(setPayments);
+    api.obtenerResumen(tripId).then(setSummary);
+    api.listarGastos(tripId).then(setExpenses);
+    api.listarPagos(tripId).then(setPayments);
   }
 
   useEffect(reload, [tripId]);
-  useAutoRefresh(reload, [tripId]);
+  useActualizacionAutomatica(reload, [tripId]);
 
   if (!summary) return <p className="text-slate-400">Cargando resumen...</p>;
 
@@ -36,7 +36,7 @@ export function Resumen() {
   }
 
   // Cuánto puso el usuario en un gasto puntual (puede haber varios pagadores).
-  function miAporte(e: Expense) {
+  function miAporte(e: Gasto) {
     return Number(e.payers.find((p) => p.userId === user?.id)?.amount ?? 0);
   }
 
@@ -67,7 +67,7 @@ export function Resumen() {
           <p className={`${sectionLabel} flex-1`}>Gasto total del proyecto</p>
           <Flecha seccion="gasto" />
         </div>
-        <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">{formatMoney(summary.totalExpense)}</p>
+        <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">{formatearPlata(summary.totalExpense)}</p>
         <p className="text-xs text-slate-400">{summary.expenseCount} gastos registrados. Hacé clic para ver el detalle.</p>
 
         {abiertas.gasto && (
@@ -81,10 +81,10 @@ export function Resumen() {
                     <div className="min-w-0 flex-1">
                       <p className={filaTitulo}>{e.description}</p>
                       <p className={filaSub}>
-                        {formatDate(e.expenseDate)} · Pagó: {paidBySummary(e.payers, user?.id)}
+                        {formatearFecha(e.expenseDate)} · Pagó: {resumenDePagadores(e.payers, user?.id)}
                       </p>
                     </div>
-                    <span className="shrink-0 text-sm font-bold text-slate-800 dark:text-slate-100">{formatMoney(e.amount)}</span>
+                    <span className="shrink-0 text-sm font-bold text-slate-800 dark:text-slate-100">{formatearPlata(e.amount)}</span>
                   </div>
                 ))}
               </div>
@@ -98,7 +98,7 @@ export function Resumen() {
           <p className={`${sectionLabel} flex-1`}>Pendiente de saldar</p>
           <Flecha seccion="pendiente" />
         </div>
-        <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">{formatMoney(summary.pendingTotal)}</p>
+        <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">{formatearPlata(summary.pendingTotal)}</p>
         <p className="text-xs text-slate-400">Lo que falta pagar entre los participantes. Hacé clic para ver quién le debe a quién.</p>
 
         {abiertas.pendiente && (
@@ -110,20 +110,20 @@ export function Resumen() {
                 {summary.settlements.map((s, i) => (
                   <div key={i} className={fila}>
                     <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${avatarColor(s.fromUserId, s.fromAvatarColor).bg} ${avatarColor(s.fromUserId, s.fromAvatarColor).text}`}
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${colorDeAvatar(s.fromUserId, s.fromAvatarColor).bg} ${colorDeAvatar(s.fromUserId, s.fromAvatarColor).text}`}
                     >
-                      {initials(s.fromName)}
+                      {iniciales(s.fromName)}
                     </span>
                     <ArrowRight size={13} className="shrink-0 text-slate-400" />
                     <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${avatarColor(s.toUserId, s.toAvatarColor).bg} ${avatarColor(s.toUserId, s.toAvatarColor).text}`}
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${colorDeAvatar(s.toUserId, s.toAvatarColor).bg} ${colorDeAvatar(s.toUserId, s.toAvatarColor).text}`}
                     >
-                      {initials(s.toName)}
+                      {iniciales(s.toName)}
                     </span>
                     <p className={`${filaTitulo} flex-1`}>
                       {s.fromName} a {s.toName}
                     </p>
-                    <span className="shrink-0 text-sm font-bold text-slate-800 dark:text-slate-100">{formatMoney(s.amount)}</span>
+                    <span className="shrink-0 text-sm font-bold text-slate-800 dark:text-slate-100">{formatearPlata(s.amount)}</span>
                   </div>
                 ))}
               </div>
@@ -140,11 +140,11 @@ export function Resumen() {
         <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <p className="text-xs text-slate-400">Aportaste</p>
-            <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{formatMoney(summary.myContribution)}</p>
+            <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{formatearPlata(summary.myContribution)}</p>
           </div>
           <div>
             <p className="text-xs text-slate-400">Aportaron otros</p>
-            <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{formatMoney(summary.othersContribution)}</p>
+            <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{formatearPlata(summary.othersContribution)}</p>
           </div>
         </div>
         <p className="mt-2 text-xs text-slate-400">Hacé clic para ver gasto por gasto cuánto puso cada lado.</p>
@@ -163,10 +163,10 @@ export function Resumen() {
                       <div className="min-w-0 flex-1">
                         <p className={filaTitulo}>{e.description}</p>
                         <p className={filaSub}>
-                          Vos {formatMoney(mio)} · Otros {formatMoney(otros)}
+                          Vos {formatearPlata(mio)} · Otros {formatearPlata(otros)}
                         </p>
                       </div>
-                      <span className="shrink-0 text-sm font-bold text-slate-800 dark:text-slate-100">{formatMoney(e.amount)}</span>
+                      <span className="shrink-0 text-sm font-bold text-slate-800 dark:text-slate-100">{formatearPlata(e.amount)}</span>
                     </div>
                   );
                 })}
@@ -181,7 +181,7 @@ export function Resumen() {
           <p className={`${sectionLabel} flex-1`}>Te pagaron</p>
           <Flecha seccion="pagos" />
         </div>
-        <p className="mt-1 text-2xl font-bold text-vaquita-greenDark">{formatMoney(summary.paidToMe)}</p>
+        <p className="mt-1 text-2xl font-bold text-vaquita-greenDark">{formatearPlata(summary.paidToMe)}</p>
         <p className="text-xs text-slate-400">Pagos que recibiste para saldar cuentas. Hacé clic para ver de quién.</p>
 
         {abiertas.pagos && (
@@ -193,15 +193,15 @@ export function Resumen() {
                 {pagosRecibidos.map((p) => (
                   <div key={p.id} className={fila}>
                     <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${avatarColor(p.fromUser.id, p.fromUser.avatarColor).bg} ${avatarColor(p.fromUser.id, p.fromUser.avatarColor).text}`}
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${colorDeAvatar(p.fromUser.id, p.fromUser.avatarColor).bg} ${colorDeAvatar(p.fromUser.id, p.fromUser.avatarColor).text}`}
                     >
-                      {initials(displayName(p.fromUser))}
+                      {iniciales(nombreVisible(p.fromUser))}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className={filaTitulo}>{displayName(p.fromUser)}</p>
-                      <p className={filaSub}>{formatDate(p.createdAt)}</p>
+                      <p className={filaTitulo}>{nombreVisible(p.fromUser)}</p>
+                      <p className={filaSub}>{formatearFecha(p.createdAt)}</p>
                     </div>
-                    <span className="shrink-0 text-sm font-bold text-vaquita-greenDark">{formatMoney(p.amount)}</span>
+                    <span className="shrink-0 text-sm font-bold text-vaquita-greenDark">{formatearPlata(p.amount)}</span>
                   </div>
                 ))}
               </div>
@@ -216,9 +216,9 @@ export function Resumen() {
           {summary.balances.map((b) => (
             <div key={b.userId} className={fila}>
               <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${avatarColor(b.userId, b.avatarColor).bg} ${avatarColor(b.userId, b.avatarColor).text}`}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${colorDeAvatar(b.userId, b.avatarColor).bg} ${colorDeAvatar(b.userId, b.avatarColor).text}`}
               >
-                {initials(b.name)}
+                {iniciales(b.name)}
               </span>
               <div className="min-w-0 flex-1">
                 <p className={filaTitulo}>
@@ -226,12 +226,12 @@ export function Resumen() {
                   {b.userId === user?.id ? " (vos)" : ""}
                 </p>
                 <p className={filaSub}>
-                  Puso {formatMoney(b.paid)} · Le tocaba {formatMoney(b.owed)}
+                  Puso {formatearPlata(b.paid)} · Le tocaba {formatearPlata(b.owed)}
                 </p>
               </div>
               <span className={`shrink-0 text-sm font-bold ${b.balance >= 0 ? "text-vaquita-greenDark" : "text-red-500"}`}>
                 {b.balance >= 0 ? "+" : "-"}
-                {formatMoney(Math.abs(b.balance))}
+                {formatearPlata(Math.abs(b.balance))}
               </span>
             </div>
           ))}
@@ -247,12 +247,12 @@ export function Resumen() {
             {summary.timeByParticipant.map((p) => (
               <div key={p.userId} className={fila}>
                 <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${avatarColor(p.userId, p.avatarColor).bg} ${avatarColor(p.userId, p.avatarColor).text}`}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${colorDeAvatar(p.userId, p.avatarColor).bg} ${colorDeAvatar(p.userId, p.avatarColor).text}`}
                 >
-                  {initials(p.name)}
+                  {iniciales(p.name)}
                 </span>
                 <p className={`${filaTitulo} flex-1`}>{p.name}</p>
-                <span className="shrink-0 text-sm font-semibold text-slate-600 dark:text-slate-300">{formatDuration(p.totalSeconds)}</span>
+                <span className="shrink-0 text-sm font-semibold text-slate-600 dark:text-slate-300">{formatearDuracion(p.totalSeconds)}</span>
               </div>
             ))}
           </div>

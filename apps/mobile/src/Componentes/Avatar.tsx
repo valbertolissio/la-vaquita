@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { avatarColor, initials } from "../Utilidades/format";
+import { colorDeAvatar, iniciales } from "../Utilidades/formato";
 
 interface AvatarProps {
   userId: string;
@@ -13,10 +13,10 @@ export function Avatar({ userId, name, color, size = 32 }: AvatarProps) {
     <View
       style={[
         styles.circle,
-        { width: size, height: size, borderRadius: size / 2, backgroundColor: avatarColor(userId, color) },
+        { width: size, height: size, borderRadius: size / 2, backgroundColor: colorDeAvatar(userId, color) },
       ]}
     >
-      <Text style={[styles.text, { fontSize: size * 0.38 }]}>{initials(name)}</Text>
+      <Text style={[styles.text, { fontSize: size * 0.38 }]}>{iniciales(name)}</Text>
     </View>
   );
 }

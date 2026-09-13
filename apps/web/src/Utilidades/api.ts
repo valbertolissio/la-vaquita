@@ -28,47 +28,47 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  register: (data: { name: string; email: string; password: string }) =>
+  registrar: (data: { name: string; email: string; password: string }) =>
     request<{ token: string; user: any }>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
-  login: (data: { email: string; password: string }) =>
+  iniciarSesion: (data: { email: string; password: string }) =>
     request<{ token: string; user: any }>("/auth/login", { method: "POST", body: JSON.stringify(data) }),
-  forgotPassword: (email: string) =>
+  olvideMiContrasena: (email: string) =>
     request<{ message: string }>("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
-  resetPassword: (data: { token: string; password: string }) =>
+  restablecerContrasena: (data: { token: string; password: string }) =>
     request<{ message: string }>("/auth/reset-password", { method: "POST", body: JSON.stringify(data) }),
-  me: () => request<any>("/auth/me"),
-  updateMe: (data: { name?: string; nickname?: string | null; avatarColor?: string | null }) =>
+  miPerfil: () => request<any>("/auth/me"),
+  actualizarMiPerfil: (data: { name?: string; nickname?: string | null; avatarColor?: string | null }) =>
     request<any>("/auth/me", { method: "PATCH", body: JSON.stringify(data) }),
 
-  listTrips: () => request<any[]>("/trips"),
-  createTrip: (data: any) => request<any>("/trips", { method: "POST", body: JSON.stringify(data) }),
-  getTrip: (tripId: string) => request<any>(`/trips/${tripId}`),
-  updateTrip: (tripId: string, data: any) =>
+  listarProyectos: () => request<any[]>("/trips"),
+  crearProyecto: (data: any) => request<any>("/trips", { method: "POST", body: JSON.stringify(data) }),
+  obtenerProyecto: (tripId: string) => request<any>(`/trips/${tripId}`),
+  actualizarProyecto: (tripId: string, data: any) =>
     request<any>(`/trips/${tripId}`, { method: "PATCH", body: JSON.stringify(data) }),
-  deleteTrip: (tripId: string) => request<void>(`/trips/${tripId}`, { method: "DELETE" }),
-  createCategory: (tripId: string, data: { name: string; icon?: string; color?: string }) =>
+  eliminarProyecto: (tripId: string) => request<void>(`/trips/${tripId}`, { method: "DELETE" }),
+  crearCategoria: (tripId: string, data: { name: string; icon?: string; color?: string }) =>
     request<any>(`/trips/${tripId}/categories`, { method: "POST", body: JSON.stringify(data) }),
-  updateCategory: (tripId: string, categoryId: string, data: { name?: string; icon?: string | null; color?: string | null }) =>
+  actualizarCategoria: (tripId: string, categoryId: string, data: { name?: string; icon?: string | null; color?: string | null }) =>
     request<any>(`/trips/${tripId}/categories/${categoryId}`, { method: "PATCH", body: JSON.stringify(data) }),
-  deleteCategory: (tripId: string, categoryId: string) =>
+  eliminarCategoria: (tripId: string, categoryId: string) =>
     request<void>(`/trips/${tripId}/categories/${categoryId}`, { method: "DELETE" }),
-  getSummary: (tripId: string) => request<any>(`/trips/${tripId}/summary`),
-  inviteMember: (tripId: string, email?: string) =>
+  obtenerResumen: (tripId: string) => request<any>(`/trips/${tripId}/summary`),
+  invitarParticipante: (tripId: string, email?: string) =>
     request<{ id: string; email: string | null; token: string; emailSent: boolean }>(`/trips/${tripId}/invitations`, {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
-  acceptInvitation: (token: string) =>
+  aceptarInvitacion: (token: string) =>
     request<{ tripId: string }>(`/trips/invitations/${token}/accept`, { method: "POST" }),
 
-  listExpenses: (tripId: string) => request<any[]>(`/trips/${tripId}/expenses`),
-  createExpense: (tripId: string, data: any) =>
+  listarGastos: (tripId: string) => request<any[]>(`/trips/${tripId}/expenses`),
+  crearGasto: (tripId: string, data: any) =>
     request(`/trips/${tripId}/expenses`, { method: "POST", body: JSON.stringify(data) }),
-  updateExpense: (tripId: string, expenseId: string, data: any) =>
+  actualizarGasto: (tripId: string, expenseId: string, data: any) =>
     request(`/trips/${tripId}/expenses/${expenseId}`, { method: "PATCH", body: JSON.stringify(data) }),
-  deleteExpense: (tripId: string, expenseId: string) =>
+  eliminarGasto: (tripId: string, expenseId: string) =>
     request(`/trips/${tripId}/expenses/${expenseId}`, { method: "DELETE" }),
-  scanReceipt: (tripId: string, file: File) => {
+  escanearComprobante: (tripId: string, file: File) => {
     const form = new FormData();
     form.append("receipt", file);
     return request<{
@@ -78,38 +78,38 @@ export const api = {
       expenseDate: string;
       receiptUrl: string;
       confidence: number;
-      items: { description: string; amount: number }[];
+      items: { description: string; amount: number; cantidad: number }[];
       /** true solo si `amount` salió de una línea "TOTAL" del ticket. */
       totalConfiable: boolean;
     }>(`/trips/${tripId}/expenses/scan-receipt`, { method: "POST", body: form });
   },
 
-  listTasks: (tripId: string) => request<any[]>(`/trips/${tripId}/tasks`),
-  createTask: (tripId: string, data: any) =>
+  listarTareas: (tripId: string) => request<any[]>(`/trips/${tripId}/tasks`),
+  crearTarea: (tripId: string, data: any) =>
     request(`/trips/${tripId}/tasks`, { method: "POST", body: JSON.stringify(data) }),
-  updateTask: (tripId: string, taskId: string, data: any) =>
+  actualizarTarea: (tripId: string, taskId: string, data: any) =>
     request(`/trips/${tripId}/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify(data) }),
-  completeTask: (tripId: string, taskId: string, data?: { durationSeconds?: number }) =>
+  completarTarea: (tripId: string, taskId: string, data?: { durationSeconds?: number }) =>
     request<{ task: any; durationSeconds: number | null; rotated: boolean; nextAssignee: { id: string; name: string } | null }>(
       `/trips/${tripId}/tasks/${taskId}/complete`,
       { method: "POST", body: JSON.stringify(data ?? {}) }
     ),
-  uncompleteTask: (tripId: string, taskId: string) =>
+  descompletarTarea: (tripId: string, taskId: string) =>
     request<any>(`/trips/${tripId}/tasks/${taskId}/uncomplete`, { method: "POST" }),
-  deleteTask: (tripId: string, taskId: string) =>
+  eliminarTarea: (tripId: string, taskId: string) =>
     request(`/trips/${tripId}/tasks/${taskId}`, { method: "DELETE" }),
 
-  listPayments: (tripId: string) => request<any[]>(`/trips/${tripId}/payments`),
-  createPayment: (tripId: string, data: { fromUserId: string; toUserId: string; amount: number; note?: string }) =>
+  listarPagos: (tripId: string) => request<any[]>(`/trips/${tripId}/payments`),
+  crearPago: (tripId: string, data: { fromUserId: string; toUserId: string; amount: number; note?: string }) =>
     request<any>(`/trips/${tripId}/payments`, { method: "POST", body: JSON.stringify(data) }),
-  deletePayment: (tripId: string, paymentId: string) =>
+  eliminarPago: (tripId: string, paymentId: string) =>
     request(`/trips/${tripId}/payments/${paymentId}`, { method: "DELETE" }),
 };
 
-export function saveToken(token: string) {
+export function guardarToken(token: string) {
   localStorage.setItem("la-vaquita-token", token);
 }
 
-export function clearToken() {
+export function borrarToken() {
   localStorage.removeItem("la-vaquita-token");
 }

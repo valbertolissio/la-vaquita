@@ -1,0 +1,149 @@
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Plus, Pencil, Trash2, UtensilsCrossed, Car, Home, PartyPopper, Receipt, LucideIcon } from "lucide-react";
+import { api } from "../Utilidades/api";
+import { Gasto, Proyecto } from "../Utilidades/tipos";
+import { formatearFecha, formatearPlata, resumenDePagadores } from "../Utilidades/formato";
+import { useActualizacionAutomatica } from "../Utilidades/useActualizacionAutomatica";
+import { ModalNuevoGasto } from "../Componentes/ModalNuevoGasto";
+
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Alimentación: UtensilsCrossed,
+  Transporte: Car,
+  Alojamiento: Home,
+  Ocio: PartyPopper,
+  Otros: Receipt,
+};
+
+export function Gastos() {
+  const { tripId } = useParams();
+  const [expenses, setExpenses] = useState<Gasto[] | null>(null);
+  const [trip, setTrip] = useState<Proyecto | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Gasto | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  function reload() {
+    if (!tripId) return;
+    api.listarGastos(tripId).then(setExpenses);
+  }
+
+  useEffect(() => {
+    reload();
+    if (tripId) api.obtenerProyecto(tripId).then(setTrip);
+  }, [tripId]);
+  useActualizacionAutomatica(reload, [tripId]);
+
+  async function handleDelete(expenseId: string) {
+    if (!tripId) return;
+    if (!confirm("¿Eliminar este gasto? Los saldos se recalculan automáticamente.")) return;
+    setDeletingId(expenseId);
+    try {
+      await api.eliminarGasto(tripId, expenseId);
+      reload();
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Gastos</h2>
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-1.5 rounded-lg bg-vaquita-green px-4 py-2 text-sm font-semibold text-white hover:bg-vaquita-greenDark"
+        >
+          <Plus size={16} strokeWidth={2.5} /> Gasto nuevo
+        </button>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-left text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">
+            <tr>
+              <th className="px-4 py-3">Descripción</th>
+              <th className="px-4 py-3">Categoría</th>
+              <th className="px-4 py-3">Pagó</th>
+              <th className="px-4 py-3">Fecha</th>
+              <th className="px-4 py-3 text-right">Monto</th>
+              <th className="w-10 px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody>
+            {expenses === null && (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                  Cargando gastos...
+                </td>
+              </tr>
+            )}
+            {expenses?.map((e) => {
+              const CategoryIcon = CATEGORY_ICONS[e.category?.name ?? "Otros"] ?? Receipt;
+              return (
+                <tr key={e.id} className="group border-t border-slate-100 hover:bg-slate-50/60 dark:border-slate-700 dark:hover:bg-slate-700/50">
+                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{e.description}</td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
+                    <span className="inline-flex items-center gap-1.5">
+                      <CategoryIcon size={14} strokeWidth={2} className="text-slate-400" />
+                      {e.category?.name ?? "Otros"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{resumenDePagadores(e.payers)}</td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{formatearFecha(e.expenseDate)}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-slate-800 dark:text-slate-100">{formatearPlata(e.amount)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-3 opacity-0 transition group-hover:opacity-100">
+                      <button onClick={() => setEditingExpense(e)} className="text-slate-300 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" title="Editar gasto">
+                        <Pencil size={15} strokeWidth={2} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(e.id)}
+                        disabled={deletingId === e.id}
+                        className="text-slate-300 hover:text-red-500 disabled:opacity-60 dark:text-slate-500"
+                        title="Eliminar gasto"
+                      >
+                        <Trash2 size={15} strokeWidth={2} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {expenses?.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                  Todavía no cargaste ningún gasto.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {showModal && trip && tripId && (
+        <ModalNuevoGasto
+          tripId={tripId}
+          trip={trip}
+          onClose={() => setShowModal(false)}
+          onCreated={() => {
+            setShowModal(false);
+            reload();
+          }}
+        />
+      )}
+      {editingExpense && trip && tripId && (
+        <ModalNuevoGasto
+          tripId={tripId}
+          trip={trip}
+          expense={editingExpense}
+          onClose={() => setEditingExpense(null)}
+          onCreated={() => {
+            setEditingExpense(null);
+            reload();
+          }}
+        />
+      )}
+    </div>
+  );
+}

@@ -1,4 +1,4 @@
-import { prisma } from "../Modelo/prisma";
+import { prisma } from "../Modelo/baseDeDatos";
 
 /**
  * Devuelve los userId recibidos que NO son integrantes del viaje.

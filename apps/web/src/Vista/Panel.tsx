@@ -1,0 +1,351 @@
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  PiggyBank,
+  Receipt,
+  UtensilsCrossed,
+  Car,
+  Home,
+  PartyPopper,
+  LucideIcon,
+  HandCoins,
+  Clock,
+  ArrowRight,
+  Check,
+  BarChart3,
+} from "lucide-react";
+import { api } from "../Utilidades/api";
+import { useActualizacionAutomatica } from "../Utilidades/useActualizacionAutomatica";
+import { Tarea, ResumenDelProyecto } from "../Utilidades/tipos";
+import { ModalDetalleDeSaldo } from "../Componentes/ModalDetalleDeSaldo";
+import { ModalCompletarTarea } from "../Componentes/ModalCompletarTarea";
+import { useSesion } from "../Contexto/ContextoDeSesion";
+import { colorDeAvatar, nombreVisible, formatearFecha, formatearDuracion, formatearPlata, iniciales, resumenDePagadores } from "../Utilidades/formato";
+
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Alimentación: UtensilsCrossed,
+  Transporte: Car,
+  Alojamiento: Home,
+  Ocio: PartyPopper,
+  Otros: Receipt,
+};
+
+export function Panel() {
+  const { tripId } = useParams();
+  const { user } = useSesion();
+  const [summary, setSummary] = useState<ResumenDelProyecto | null>(null);
+  const [showBalanceDetail, setShowBalanceDetail] = useState(false);
+  const [markingId, setMarkingId] = useState<number | null>(null);
+  const [completingTask, setCompletingTask] = useState<Tarea | null>(null);
+
+  function reload() {
+    if (tripId) api.obtenerResumen(tripId).then(setSummary);
+  }
+
+  useEffect(reload, [tripId]);
+  useActualizacionAutomatica(reload, [tripId]);
+
+  async function toggleTask(task: Tarea) {
+    if (!tripId) return;
+    if (task.timeTracked) {
+      setCompletingTask(task);
+      return;
+    }
+    await api.completarTarea(tripId, task.id);
+    reload();
+  }
+
+  async function finishTask(task: Tarea, durationSeconds: number) {
+    if (!tripId) return;
+    await api.completarTarea(tripId, task.id, { durationSeconds });
+    setCompletingTask(null);
+    reload();
+  }
+
+  async function markSettlementPaid(index: number) {
+    const s = summary?.settlements[index];
+    if (!tripId || !s) return;
+    setMarkingId(index);
+    try {
+      await api.crearPago(tripId, { fromUserId: s.fromUserId, toUserId: s.toUserId, amount: s.amount });
+      reload();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setMarkingId(null);
+    }
+  }
+
+  if (!summary) return <p className="text-slate-400 dark:text-slate-400">Cargando resumen...</p>;
+
+  const totalTimeSeconds = summary.timeByParticipant.reduce((s, p) => s + p.totalSeconds, 0);
+
+  const balancePositive = summary.myBalance >= 0;
+
+  return (
+    <div className="space-y-6">
+      <button
+        onClick={() => setShowBalanceDetail(true)}
+        className={`flex w-full items-center justify-between rounded-2xl border-2 p-6 text-left shadow-sm transition hover:shadow-md ${
+          balancePositive ? "border-vaquita-green/40 bg-vaquita-green/5" : "border-red-300/50 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10"
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <span
+            className={`flex h-14 w-14 items-center justify-center rounded-full ${
+              balancePositive ? "bg-vaquita-green/15 text-vaquita-greenDark" : "bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-400"
+            }`}
+          >
+            <PiggyBank size={26} strokeWidth={2} />
+          </span>
+          <div>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Tu saldo</p>
+            <p className={`font-display text-4xl font-bold ${balancePositive ? "text-vaquita-greenDark" : "text-red-500"}`}>
+              {balancePositive ? "+" : ""}
+              {formatearPlata(summary.myBalance)}
+            </p>
+            <p className="mt-0.5 text-xs text-slate-400">Ver el detalle →</p>
+          </div>
+        </div>
+        <span className={`rounded-full px-4 py-1.5 text-sm font-semibold ${balancePositive ? "bg-vaquita-green/15 text-vaquita-greenDark" : "bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-400"}`}>
+          {balancePositive ? "A tu favor" : "Debés"}
+        </span>
+      </button>
+
+      {showBalanceDetail && tripId && user && (
+        <ModalDetalleDeSaldo tripId={tripId} userId={user.id} onClose={() => setShowBalanceDetail(false)} />
+      )}
+
+      <Link
+        to={`/trips/${tripId}/resumen`}
+        className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-vaquita-green/10 text-vaquita-greenDark">
+          <BarChart3 size={18} strokeWidth={2} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-bold text-slate-800 dark:text-slate-100">Resumen detallado</span>
+          <span className="block text-xs text-slate-400">Gasto total, pendiente, aportes y pagos recibidos</span>
+        </span>
+        <ArrowRight size={18} className="shrink-0 text-slate-400" />
+      </Link>
+
+      {/* Lo principal de la app: saldar cuentas y ver cuánto tiempo metió cada uno */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="rounded-2xl border-2 border-vaquita-green/30 bg-white p-5 shadow-sm dark:bg-slate-800">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-vaquita-green/10 text-vaquita-greenDark">
+              <HandCoins size={18} strokeWidth={2} />
+            </span>
+            <h2 className="min-w-0 text-base font-bold text-slate-800 dark:text-slate-100">Para saldar cuentas</h2>
+          </div>
+          {summary.settlements.length === 0 ? (
+            <p className="text-sm text-slate-400">Todos están al día. Nadie le debe nada a nadie.</p>
+          ) : (
+            <ul className="space-y-2">
+              {/* flex-wrap + un ancho mínimo para los nombres: cuando la
+                  tarjeta queda angosta (pantalla chica o dos columnas), el
+                  monto y el botón bajan a un renglón propio en vez de pisarse
+                  con los avatares, que no se achican. */}
+              {summary.settlements.map((s, i) => (
+                <li key={i} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 rounded-lg bg-slate-50 px-3 py-2.5 text-sm dark:bg-slate-700/50">
+                  <span className="flex min-w-[7rem] flex-1 items-center gap-1.5 overflow-hidden font-medium text-slate-700 dark:text-slate-300">
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] ${colorDeAvatar(s.fromUserId, s.fromAvatarColor).bg} ${colorDeAvatar(s.fromUserId, s.fromAvatarColor).text}`}>
+                      {iniciales(s.fromName)}
+                    </span>
+                    <span className="truncate">{s.fromName}</span>
+                    <ArrowRight size={13} className="shrink-0 text-slate-400" />
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] ${colorDeAvatar(s.toUserId, s.toAvatarColor).bg} ${colorDeAvatar(s.toUserId, s.toAvatarColor).text}`}>
+                      {iniciales(s.toName)}
+                    </span>
+                    <span className="truncate">{s.toName}</span>
+                  </span>
+                  <span className="ml-auto flex shrink-0 items-center gap-2">
+                    <span className="font-bold text-slate-800 dark:text-slate-100">{formatearPlata(s.amount)}</span>
+                    {(s.fromUserId === user?.id || s.toUserId === user?.id) && (
+                      <button
+                        onClick={() => markSettlementPaid(i)}
+                        disabled={markingId === i}
+                        title="Marcar como pagado"
+                        className="flex items-center gap-1 rounded-full border border-vaquita-green/40 px-2 py-1 text-xs font-medium text-vaquita-greenDark hover:bg-vaquita-green/10 disabled:opacity-60"
+                      >
+                        <Check size={12} strokeWidth={2.5} />
+                        {markingId === i ? "..." : "Pagado"}
+                      </button>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="rounded-2xl border-2 border-amber-300/40 bg-white p-5 shadow-sm dark:bg-slate-800">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10">
+              <Clock size={18} strokeWidth={2} />
+            </span>
+            <h2 className="min-w-0 text-base font-bold text-slate-800 dark:text-slate-100">Tiempo dedicado a tareas</h2>
+          </div>
+          {summary.timeByParticipant.length === 0 ? (
+            <p className="text-sm text-slate-400">Todavía no hay tareas completadas con tiempo registrado.</p>
+          ) : (
+            <ul className="space-y-2.5">
+              {summary.timeByParticipant.map((p) => {
+                const pct = totalTimeSeconds ? Math.round((p.totalSeconds / totalTimeSeconds) * 100) : 0;
+                return (
+                  <li key={p.userId}>
+                    <div className="mb-1 flex items-center justify-between gap-2 text-sm">
+                      <span className="flex min-w-0 items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] ${colorDeAvatar(p.userId, p.avatarColor).bg} ${colorDeAvatar(p.userId, p.avatarColor).text}`}>
+                          {iniciales(p.name)}
+                        </span>
+                        <span className="truncate">{p.name}</span>
+                      </span>
+                      <span className="shrink-0 font-bold text-slate-800 dark:text-slate-100">{formatearDuracion(p.totalSeconds)}</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/50">
+                      <div className="h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Saldos entre participantes</h2>
+          <div className="space-y-3">
+            {summary.balances.map((b) => (
+              <div key={b.userId} className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${colorDeAvatar(b.userId, b.avatarColor).bg} ${colorDeAvatar(b.userId, b.avatarColor).text}`}
+                  >
+                    {iniciales(b.name)}
+                  </span>
+                  <span className="truncate text-sm text-slate-700 dark:text-slate-300">{b.name}</span>
+                </div>
+                <span className={`shrink-0 text-sm font-semibold ${b.balance >= 0 ? "text-vaquita-greenDark" : "text-red-500"}`}>
+                  {b.balance >= 0 ? "+ " : "- "}
+                  {formatearPlata(Math.abs(b.balance)).replace("-", "")}
+                </span>
+              </div>
+            ))}
+          </div>
+          <Link to={`/trips/${tripId}/participantes`} className="mt-4 inline-block text-sm font-medium text-blue-600 hover:underline">
+            Ver detalle de saldos →
+          </Link>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-semibold text-slate-800 dark:text-slate-100">Últimos gastos</h2>
+            <Link to={`/trips/${tripId}/gastos`} className="text-sm font-medium text-blue-600 hover:underline">
+              Ver todos
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {summary.recentExpenses.map((e) => {
+              const CategoryIcon = CATEGORY_ICONS[e.category?.name ?? "Otros"] ?? Receipt;
+              return (
+              <div key={e.id} className="flex items-center justify-between gap-2 text-sm">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">
+                    <CategoryIcon size={15} strokeWidth={2} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-slate-800 dark:text-slate-100">{e.description}</p>
+                    <p className="truncate text-xs text-slate-400">Pagó: {resumenDePagadores(e.payers)}</p>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="font-semibold text-slate-800 dark:text-slate-100">{formatearPlata(e.amount)}</p>
+                  <p className="text-xs text-slate-400">{formatearFecha(e.expenseDate)}</p>
+                </div>
+              </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Tareas</h2>
+          <div className="space-y-3">
+            {summary.pendingTasks.map((t) => (
+              <label key={t.id} className="flex cursor-pointer items-center gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  onChange={() => toggleTask(t)}
+                  className="h-4 w-4 rounded border-slate-300 accent-vaquita-green dark:border-slate-600"
+                />
+                {/* Sin fecha al lado: la tarea está pendiente, y una fecha acá
+                    se leía como si ya estuviera hecha. */}
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-slate-800 dark:text-slate-100">{t.title}</p>
+                  <p className="text-xs text-slate-400">Asignada a: {t.assignedTo ? nombreVisible(t.assignedTo) : "Sin asignar"}</p>
+                </div>
+              </label>
+            ))}
+            {summary.pendingTasks.length === 0 && <p className="text-sm text-slate-400">No hay tareas pendientes.</p>}
+          </div>
+          <Link to={`/trips/${tripId}/tareas`} className="mt-4 inline-block text-sm font-medium text-blue-600 hover:underline">
+            Ver todas las tareas →
+          </Link>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Gráfico de gastos por categoría</h2>
+          {summary.expensesByCategory.length === 0 ? (
+            <p className="text-sm text-slate-400">Todavía no hay gastos cargados.</p>
+          ) : (
+            <div className="flex items-center gap-4">
+              <div className="h-40 w-40 shrink-0">
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie data={summary.expensesByCategory} dataKey="total" nameKey="name" innerRadius={45} outerRadius={70} paddingAngle={2}>
+                      {summary.expensesByCategory.map((c, i) => (
+                        <Cell key={i} fill={c.color ?? "#94a3b8"} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => formatearPlata(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <ul className="flex-1 space-y-1.5 text-sm">
+                {summary.expensesByCategory.map((c) => {
+                  const pct = summary.totalExpense ? Math.round((c.total / summary.totalExpense) * 100) : 0;
+                  return (
+                    <li key={c.name} className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color ?? "#94a3b8" }} />
+                        {c.name}
+                      </span>
+                      <span className="text-slate-500 dark:text-slate-400">
+                        {pct}% ({formatearPlata(c.total)})
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {completingTask && (
+        <ModalCompletarTarea
+          task={completingTask}
+          onClose={() => setCompletingTask(null)}
+          onConfirm={(durationSeconds) => finishTask(completingTask, durationSeconds)}
+        />
+      )}
+    </div>
+  );
+}

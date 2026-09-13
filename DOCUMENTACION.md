@@ -58,7 +58,7 @@ apps/api/
 
 Las **tablas de la base de datos** (los modelos de datos en sí) están definidas en `apps/api/prisma/schema.prisma`, un solo archivo con todas ellas. Tienen que vivir en esa carpeta fija porque es la que espera la herramienta de Prisma para generar el cliente y las migraciones: moverlas rompería `npx prisma migrate` y `npx prisma generate`.
 
-`apps/api/src/Modelo/prisma.ts` es **el cliente** que el resto del código importa para leer y escribir esas tablas (`import { prisma } from "../Modelo/prisma"`). En resumen: `prisma/schema.prisma` = qué tablas existen. `Modelo/prisma.ts` = el objeto que se usa en el código para consultarlas.
+`apps/api/src/Modelo/baseDeDatos.ts` es **el cliente** que el resto del código importa para leer y escribir esas tablas (`import { prisma } from "../Modelo/prisma"`). En resumen: `prisma/schema.prisma` = qué tablas existen. `Modelo/baseDeDatos.ts` = el objeto que se usa en el código para consultarlas.
 
 | Modelo (tabla) | Qué representa |
 |---|---|
@@ -84,12 +84,12 @@ Cada archivo agrupa las acciones sobre un mismo tema. Reciben el pedido, validan
 
 | Archivo | Nombre | Qué hace |
 |---|---|---|
-| `authController.ts` | Controlador de Cuenta | Registro, login, ver/editar mi perfil, "olvidé mi contraseña" y "restablecer contraseña". |
-| `tripController.ts` | Controlador de Viajes | Crear/editar/borrar un viaje, listar mis viajes, invitar participantes, aceptar una invitación, y armar el **resumen del dashboard** (saldo, últimos gastos, gráfico por categoría, tareas pendientes). |
-| `categoryController.ts` | Controlador de Categorías | Crear, renombrar y borrar categorías de gasto (no deja borrar una que ya tiene gastos cargados). |
-| `expenseController.ts` | Controlador de Gastos | Listar/crear/editar/borrar gastos, y **escanear un comprobante** (recibe la foto, la pasa por OCR, y devuelve los datos leídos para que el usuario los confirme). |
-| `taskController.ts` | Controlador de Tareas | Listar/crear/editar/borrar tareas, marcarlas como completadas (calculando el tiempo si usan cronómetro), y rotar el turno si son rotativas. |
-| `paymentController.ts` | Controlador de Pagos | Registrar y deshacer un pago entre dos integrantes (para saldar cuentas). |
+| `ControladorCuentas.ts` | Controlador de Cuenta | Registro, login, ver/editar mi perfil, "olvidé mi contraseña" y "restablecer contraseña". |
+| `ControladorProyectos.ts` | Controlador de Viajes | Crear/editar/borrar un viaje, listar mis viajes, invitar participantes, aceptar una invitación, y armar el **resumen del dashboard** (saldo, últimos gastos, gráfico por categoría, tareas pendientes). |
+| `ControladorCategorias.ts` | Controlador de Categorías | Crear, renombrar y borrar categorías de gasto (no deja borrar una que ya tiene gastos cargados). |
+| `ControladorGastos.ts` | Controlador de Gastos | Listar/crear/editar/borrar gastos, y **escanear un comprobante** (recibe la foto, la pasa por OCR, y devuelve los datos leídos para que el usuario los confirme). |
+| `ControladorTareas.ts` | Controlador de Tareas | Listar/crear/editar/borrar tareas, marcarlas como completadas (calculando el tiempo si usan cronómetro), y rotar el turno si son rotativas. |
+| `ControladorPagos.ts` | Controlador de Pagos | Registrar y deshacer un pago entre dos integrantes (para saldar cuentas). |
 
 ### 2.3 Rutas
 
@@ -97,8 +97,8 @@ El "mapa" que conecta cada URL con la función del controlador que la atiende.
 
 | Archivo | Qué agrupa |
 |---|---|
-| `authRoutes.ts` | Todo lo que empieza con `/api/auth/...` (registro, login, perfil, recuperar contraseña). |
-| `tripRoutes.ts` | Todo lo que empieza con `/api/trips/...` (viajes, gastos, tareas, pagos, categorías, invitaciones). Casi todo pasa primero por `requireAuth` (¿estás logueado?) y `requireTripMember` (¿sos parte de este viaje?). |
+| `rutasDeCuentas.ts` | Todo lo que empieza con `/api/auth/...` (registro, login, perfil, recuperar contraseña). |
+| `rutasDeProyectos.ts` | Todo lo que empieza con `/api/trips/...` (viajes, gastos, tareas, pagos, categorías, invitaciones). Casi todo pasa primero por `requireAuth` (¿estás logueado?) y `requireTripMember` (¿sos parte de este viaje?). |
 
 ### 2.4 Intermediarios
 
@@ -106,8 +106,8 @@ Funciones que corren **antes** que el controlador, y pueden cortar el pedido si 
 
 | Archivo | Qué chequea |
 |---|---|
-| `auth.ts` | Que el pedido traiga un token válido (`Authorization: Bearer ...`). Si no, responde 401 antes de llegar al controlador. |
-| `tripMember.ts` | Que el usuario logueado sea efectivamente miembro del viaje que está pidiendo. Evita que alguien vea/edite un viaje ajeno. |
+| `exigirSesion.ts` | Que el pedido traiga un token válido (`Authorization: Bearer ...`). Si no, responde 401 antes de llegar al controlador. |
+| `exigirMiembro.ts` | Que el usuario logueado sea efectivamente miembro del viaje que está pidiendo. Evita que alguien vea/edite un viaje ajeno. |
 
 ### 2.5 Utilidades
 
@@ -115,15 +115,15 @@ Cálculos que varios controladores necesitan, separados para no repetir código 
 
 | Archivo | Qué hace |
 |---|---|
-| `balances.ts` | El corazón del cálculo de saldos: cuánto pagó y cuánto debe cada integrante, y el algoritmo que simplifica las deudas al mínimo número de transferencias posibles. |
-| `splits.ts` | Divide un monto en partes iguales entre una lista de personas (manejando el redondeo de centavos). |
-| `payers.ts` | Valida que la suma de "quién pagó cuánto" coincida con el total del gasto. |
-| `receiptParser.ts` | Las heurísticas que leen el texto crudo que devuelve el OCR y extraen el monto, la fecha, el comercio, y cada ítem del ticket. Explicado en detalle en la sección 6. |
-| `rotation.ts` | La lógica de turnos rotativos: a quién le toca después, y cuánto duró una tarea con cronómetro. |
+| `saldos.ts` | El corazón del cálculo de saldos: cuánto pagó y cuánto debe cada integrante, y el algoritmo que simplifica las deudas al mínimo número de transferencias posibles. |
+| `divisiones.ts` | Divide un monto en partes iguales entre una lista de personas (manejando el redondeo de centavos). |
+| `pagadores.ts` | Valida que la suma de "quién pagó cuánto" coincida con el total del gasto. |
+| `lectorDeComprobantes.ts` | Las heurísticas que leen el texto crudo que devuelve el OCR y extraen el monto, la fecha, el comercio, y cada ítem del ticket. Explicado en detalle en la sección 6. |
+| `turnos.ts` | La lógica de turnos rotativos: a quién le toca después, y cuánto duró una tarea con cronómetro. |
 | `miembros.ts` | Chequea que los usuarios que llegan en un pedido (pagadores, asignados, entre quiénes se divide) sean realmente miembros del viaje. |
-| `mailer.ts` | Arma y envía los emails (invitación a un viaje, recuperación de contraseña) usando Gmail. |
-| `jwt.ts` | Genera y valida el token de sesión. |
-| `selects.ts` | Qué campos de `User` es seguro devolver al cliente (nunca se manda `passwordHash`). |
+| `correo.ts` | Arma y envía los emails (invitación a un viaje, recuperación de contraseña) usando Gmail. |
+| `sesion.ts` | Genera y valida el token de sesión. |
+| `camposPublicos.ts` | Qué campos de `User` es seguro devolver al cliente (nunca se manda `passwordHash`). |
 
 Los archivos `*.test.ts` de esta carpeta son los tests automáticos: se corren con `npm test` desde `apps/api/` y verifican los cálculos (saldos, divisiones, pagadores, turnos, lectura de tickets) sin necesidad de levantar el servidor ni la base.
 
@@ -141,21 +141,21 @@ apps/web/src/
 
 ### 3.1 Vista
 
-Cada archivo es una pantalla completa, asociada a una URL (definidas en `App.tsx`).
+Cada archivo es una pantalla completa, asociada a una URL (definidas en `Aplicacion.tsx`).
 
 | Archivo | Pantalla | Ruta |
 |---|---|---|
-| `Login.tsx` | Ingresar | `/login` |
-| `Register.tsx` | Registrarse | `/register` |
-| `ForgotPassword.tsx` | Recuperar contraseña | `/forgot-password` |
-| `ResetPassword.tsx` | Elegir nueva contraseña | `/reset-password/:token` |
-| `AcceptInvite.tsx` | Aceptar invitación a un viaje | `/invite/:token` |
-| `TripsList.tsx` | Lista de mis proyectos | `/trips` |
-| `Dashboard.tsx` | Panel del viaje (saldo, gráfico, últimos gastos/tareas) | `/trips/:id` |
+| `Ingreso.tsx` | Ingresar | `/login` |
+| `Registro.tsx` | Registrarse | `/register` |
+| `OlvideContrasena.tsx` | Recuperar contraseña | `/forgot-password` |
+| `RestablecerContrasena.tsx` | Elegir nueva contraseña | `/reset-password/:token` |
+| `AceptarInvitacion.tsx` | Aceptar invitación a un viaje | `/invite/:token` |
+| `ListaDeProyectos.tsx` | Lista de mis proyectos | `/trips` |
+| `Panel.tsx` | Panel del viaje (saldo, gráfico, últimos gastos/tareas) | `/trips/:id` |
 | `Resumen.tsx` | Resumen detallado: cada KPI se despliega para ver qué gastos lo componen | `/trips/:id/resumen` |
-| `Expenses.tsx` | Lista de gastos del viaje | `/trips/:id/gastos` |
-| `Tasks.tsx` | Lista de tareas del viaje | `/trips/:id/tareas` |
-| `Participants.tsx` | Integrantes del viaje | `/trips/:id/participantes` |
+| `Gastos.tsx` | Lista de gastos del viaje | `/trips/:id/gastos` |
+| `Tareas.tsx` | Lista de tareas del viaje | `/trips/:id/tareas` |
+| `Participantes.tsx` | Integrantes del viaje | `/trips/:id/participantes` |
 
 ### 3.2 Componentes
 
@@ -163,18 +163,18 @@ Piezas de UI que se reusan desde varias pantallas (la mayoría son modales/venta
 
 | Archivo | Qué es |
 |---|---|
-| `TripLayout.tsx` | El "marco" de todas las pantallas de un viaje: header con el nombre, botón invitar, y navegación: engloba a `Dashboard`, `Expenses`, `Tasks`, `Participants`. |
-| `Sidebar.tsx` | La barra lateral de navegación (proyectos, cerrar sesión, modo oscuro). |
-| `NewExpenseModal.tsx` | Ventana para crear/editar un gasto: incluye la carga manual, el escaneo de comprobante con OCR, y la revisión de varios ítems detectados a la vez. |
-| `NewTaskModal.tsx` | Ventana para crear/editar una tarea (manual o rotativa, con fechas o cronómetro). |
-| `EditTripModal.tsx` | Ventana para editar nombre/fechas del viaje, **administrar categorías** (crear, renombrar, borrar), y eliminar el viaje. |
-| `InviteModal.tsx` | Ventana para invitar participantes (genera el link, compartir por WhatsApp, o mandar por email). |
-| `EditProfileModal.tsx` | Ventana para editar mi apodo y color de avatar. |
-| `CompleteTaskModal.tsx` | Ventana que aparece al marcar como hecha una tarea con cronómetro, para ajustar el tiempo si hace falta. |
-| `BalanceDetailModal.tsx` | Ventana con el detalle de cómo se compone el saldo de una persona (gasto por gasto). |
-| `StatCard.tsx` | Tarjetita reutilizable para mostrar un número destacado (ej. gasto total). |
-| `ThemeToggle.tsx` | El botón de sol/luna para cambiar entre modo claro y oscuro. |
-| `LiveTimer.tsx` | El cronómetro que se actualiza en vivo en una tarea con `timeTracked`. |
+| `MarcoDelProyecto.tsx` | El "marco" de todas las pantallas de un viaje: header con el nombre, botón invitar, y navegación: engloba a `Dashboard`, `Expenses`, `Tasks`, `Participants`. |
+| `BarraLateral.tsx` | La barra lateral de navegación (proyectos, cerrar sesión, modo oscuro). |
+| `ModalNuevoGasto.tsx` | Ventana para crear/editar un gasto: incluye la carga manual, el escaneo de comprobante con OCR, y la revisión de varios ítems detectados a la vez. |
+| `ModalNuevaTarea.tsx` | Ventana para crear/editar una tarea (manual o rotativa, con fechas o cronómetro). |
+| `ModalEditarProyecto.tsx` | Ventana para editar nombre/fechas del viaje, **administrar categorías** (crear, renombrar, borrar), y eliminar el viaje. |
+| `ModalInvitar.tsx` | Ventana para invitar participantes (genera el link, compartir por WhatsApp, o mandar por email). |
+| `ModalEditarPerfil.tsx` | Ventana para editar mi apodo y color de avatar. |
+| `ModalCompletarTarea.tsx` | Ventana que aparece al marcar como hecha una tarea con cronómetro, para ajustar el tiempo si hace falta. |
+| `ModalDetalleDeSaldo.tsx` | Ventana con el detalle de cómo se compone el saldo de una persona (gasto por gasto). |
+| `TarjetaDeDato.tsx` | Tarjetita reutilizable para mostrar un número destacado (ej. gasto total). |
+| `BotonDeTema.tsx` | El botón de sol/luna para cambiar entre modo claro y oscuro. |
+| `Cronometro.tsx` | El cronómetro que se actualiza en vivo en una tarea con `timeTracked`. |
 | `Logo.tsx` | El logo de la app (SVG). |
 
 ### 3.3 Contexto
@@ -183,23 +183,23 @@ Estado global disponible en cualquier componente sin tener que pasarlo a mano po
 
 | Archivo | Qué guarda |
 |---|---|
-| `AuthContext.tsx` | El usuario logueado y su token; funciones de login/registro/logout/editar perfil. |
-| `ThemeContext.tsx` | Si el modo es claro u oscuro, guardado en `localStorage`. |
+| `ContextoDeSesion.tsx` | El usuario logueado y su token; funciones de login/registro/logout/editar perfil. |
+| `ContextoDeTema.tsx` | Si el modo es claro u oscuro, guardado en `localStorage`. |
 
 ### 3.4 Utilidades
 
 | Archivo | Qué hace |
 |---|---|
 | `api.ts` | El único lugar que hace `fetch` a la API: una función por endpoint (`api.createExpense(...)`, `api.login(...)`, etc.). Agrega el token de sesión automáticamente. |
-| `types.ts` | Las formas (`interface`) de los datos que devuelve la API: `User`, `Trip`, `Expense`, `Task`, etc. |
-| `format.ts` | Funciones de formateo: plata (`formatMoney`), fechas, iniciales de un nombre, color de avatar, y `paidBySummary` (arma el texto "Pagó: X" para uno o varios pagadores). |
-| `useAutoRefresh.ts` | Vuelve a pedir los datos cada pocos segundos y al volver a la pestaña, para que lo que carga un integrante aparezca solo en la pantalla de los demás. |
+| `tipos.ts` | Las formas (`interface`) de los datos que devuelve la API: `User`, `Trip`, `Expense`, `Task`, etc. |
+| `formato.ts` | Funciones de formateo: plata (`formatMoney`), fechas, iniciales de un nombre, color de avatar, y `paidBySummary` (arma el texto "Pagó: X" para uno o varios pagadores). |
+| `useActualizacionAutomatica.ts` | Vuelve a pedir los datos cada pocos segundos y al volver a la pestaña, para que lo que carga un integrante aparezca solo en la pantalla de los demás. |
 
 ---
 
 ## 4. Celular
 
-Misma idea que la web, adaptada a React Native (no hay URLs, la navegación es por pila de pantallas con React Navigation, definida en `App.tsx`).
+Misma idea que la web, adaptada a React Native (no hay URLs, la navegación es por pila de pantallas con React Navigation, definida en `Aplicacion.tsx`).
 
 ```
 apps/mobile/src/
@@ -213,50 +213,50 @@ apps/mobile/src/
 
 | Archivo | Pantalla |
 |---|---|
-| `LoginScreen.tsx` | Ingresar |
-| `RegisterScreen.tsx` | Registrarse |
-| `ForgotPasswordScreen.tsx` | Recuperar contraseña |
-| `TripsListScreen.tsx` | Lista de mis proyectos |
-| `NewTripScreen.tsx` | Crear un proyecto nuevo |
-| `HomeScreen.tsx` | Panel del viaje (equivalente al Dashboard web) |
-| `ResumenScreen.tsx` | Resumen detallado, con los mismos KPI desplegables que la web |
-| `ExpensesScreen.tsx` | Lista de gastos |
-| `NewExpenseScreen.tsx` | Crear/editar un gasto (manual, OCR, categorías, pagadores múltiples) |
-| `TasksScreen.tsx` | Lista de tareas |
-| `NewTaskScreen.tsx` | Crear/editar una tarea |
-| `ParticipantsScreen.tsx` | Integrantes del viaje |
-| `InviteScreen.tsx` | Invitar participantes |
-| `BalanceDetailScreen.tsx` | Detalle de cómo se compone mi saldo |
-| `EditTripScreen.tsx` | Editar el viaje y **administrar categorías** |
-| `EditProfileScreen.tsx` | Editar mi perfil |
-| `SettingsScreen.tsx` | Ajustes: mi perfil, modo oscuro, volver a proyectos, eliminar viaje |
+| `PantallaIngreso.tsx` | Ingresar |
+| `PantallaRegistro.tsx` | Registrarse |
+| `PantallaOlvideContrasena.tsx` | Recuperar contraseña |
+| `PantallaListaDeProyectos.tsx` | Lista de mis proyectos |
+| `PantallaNuevoProyecto.tsx` | Crear un proyecto nuevo |
+| `PantallaPanel.tsx` | Panel del viaje (equivalente al Dashboard web) |
+| `PantallaResumen.tsx` | Resumen detallado, con los mismos KPI desplegables que la web |
+| `PantallaGastos.tsx` | Lista de gastos |
+| `PantallaNuevoGasto.tsx` | Crear/editar un gasto (manual, OCR, categorías, pagadores múltiples) |
+| `PantallaTareas.tsx` | Lista de tareas |
+| `PantallaNuevaTarea.tsx` | Crear/editar una tarea |
+| `PantallaParticipantes.tsx` | Integrantes del viaje |
+| `PantallaInvitar.tsx` | Invitar participantes |
+| `PantallaDetalleDeSaldo.tsx` | Detalle de cómo se compone mi saldo |
+| `PantallaEditarProyecto.tsx` | Editar el viaje y **administrar categorías** |
+| `PantallaEditarPerfil.tsx` | Editar mi perfil |
+| `PantallaAjustes.tsx` | Ajustes: mi perfil, modo oscuro, volver a proyectos, eliminar viaje |
 
 ### 4.2 Componentes
 
 | Archivo | Qué es |
 |---|---|
 | `Avatar.tsx` | El círculo con iniciales y color de cada usuario. |
-| `CompleteTaskModal.tsx` | Igual que en web: ajustar el tiempo al completar una tarea con cronómetro. |
-| `LiveTimer.tsx` | Cronómetro en vivo. |
+| `ModalCompletarTarea.tsx` | Igual que en web: ajustar el tiempo al completar una tarea con cronómetro. |
+| `Cronometro.tsx` | Cronómetro en vivo. |
 | `Logo.tsx` | Logo de la app. |
 
 ### 4.3 Contexto
 
 | Archivo | Qué guarda |
 |---|---|
-| `AuthContext.tsx` | Usuario logueado y token (persistido con `AsyncStorage`). |
-| `ThemeContext.tsx` | Modo claro/oscuro. |
-| `TripContext.tsx` | **Cuál es el viaje actualmente abierto**: no existe en la web porque ahí el viaje activo se identifica por la URL (`/trips/:id`); en mobile no hay URL, así que se guarda acá. |
+| `ContextoDeSesion.tsx` | Usuario logueado y token (persistido con `AsyncStorage`). |
+| `ContextoDeTema.tsx` | Modo claro/oscuro. |
+| `ContextoDeProyecto.tsx` | **Cuál es el viaje actualmente abierto**: no existe en la web porque ahí el viaje activo se identifica por la URL (`/trips/:id`); en mobile no hay URL, así que se guarda acá. |
 
 ### 4.4 Utilidades
 
 | Archivo | Qué hace |
 |---|---|
 | `api.ts` | Cliente HTTP hacia la API (mismo rol que en web). |
-| `types.ts` | Tipos de los datos. |
-| `format.ts` | Formateo (plata, fechas, nombres, `paidBySummary`). |
-| `theme.ts` | Los colores de la app para modo claro y oscuro. |
-| `useAutoRefresh.ts` | Igual que en web: recarga los datos sola cada pocos segundos y al volver a la app. |
+| `tipos.ts` | Tipos de los datos. |
+| `formato.ts` | Formateo (plata, fechas, nombres, `paidBySummary`). |
+| `tema.ts` | Los colores de la app para modo claro y oscuro. |
+| `useActualizacionAutomatica.ts` | Igual que en web: recarga los datos sola cada pocos segundos y al volver a la app. |
 
 ---
 
@@ -264,13 +264,13 @@ apps/mobile/src/
 
 Para ver las piezas trabajando juntas, así es el camino de **"crear un gasto"** desde el celular:
 
-1. El usuario completa el formulario en `NewExpenseScreen.tsx` (carpeta `Vista/` de mobile) y toca "Guardar".
+1. El usuario completa el formulario en `PantallaNuevoGasto.tsx` (carpeta `Vista/` de mobile) y toca "Guardar".
 2. Esa pantalla llama a `api.createExpense(tripId, datos)`, definida en `apps/mobile/src/Utilidades/api.ts`.
 3. Esa función hace un `POST` HTTP a `/api/trips/:tripId/expenses`.
-4. En el servidor, `Rutas/tripRoutes.ts` recibe esa URL y primero pasa por los intermediarios `requireAuth` (¿hay sesión?) y `requireTripMember` (¿es parte de este viaje?).
-5. Si pasa, llama a `createExpense` en `Controlador/expenseController.ts`, que valida los datos con `zod`, usa `buildEqualSplits` (de `Utilidades/splits.ts`) para dividir el monto, valida los pagadores con `validatePayersSum` (de `Utilidades/payers.ts`), y guarda todo en la base a través del cliente de `Modelo/prisma.ts` (tablas `Expense` + `ExpensePayer` + `ExpenseSplit`, definidas en `prisma/schema.prisma`).
+4. En el servidor, `Rutas/rutasDeProyectos.ts` recibe esa URL y primero pasa por los intermediarios `requireAuth` (¿hay sesión?) y `requireTripMember` (¿es parte de este viaje?).
+5. Si pasa, llama a `createExpense` en `Controlador/ControladorGastos.ts`, que valida los datos con `zod`, usa `buildEqualSplits` (de `Utilidades/divisiones.ts`) para dividir el monto, valida los pagadores con `validatePayersSum` (de `Utilidades/pagadores.ts`), y guarda todo en la base a través del cliente de `Modelo/baseDeDatos.ts` (tablas `Expense` + `ExpensePayer` + `ExpenseSplit`, definidas en `prisma/schema.prisma`).
 6. La respuesta vuelve al celular, que navega hacia atrás y refresca la lista.
-7. La próxima vez que alguien mira el Dashboard, `getTripSummary` (en `Controlador/tripController.ts`) usa `computeTripBalances` (en `Utilidades/balances.ts`) para recalcular el saldo de todos, leyendo ese gasto recién creado.
+7. La próxima vez que alguien mira el Dashboard, `getTripSummary` (en `Controlador/ControladorProyectos.ts`) usa `computeTripBalances` (en `Utilidades/saldos.ts`) para recalcular el saldo de todos, leyendo ese gasto recién creado.
 
 Ese mismo camino (Vista `api.ts` Rutas Intermediarios Controlador Modelo base de datos) se repite para cualquier acción de la app, cambiando solo el archivo/función de cada paso.
 
@@ -278,11 +278,11 @@ Ese mismo camino (Vista `api.ts` Rutas Intermediarios Controlador Modelo base de
 
 ## 6. Lectura de comprobantes
 
-Es la parte con más trabajo del proyecto y la más fácil de malinterpretar, así que va explicada aparte. Todo el camino arranca en `scanReceipt` (`Controlador/expenseController.ts`).
+Es la parte con más trabajo del proyecto y la más fácil de malinterpretar, así que va explicada aparte. Todo el camino arranca en `scanReceipt` (`Controlador/ControladorGastos.ts`).
 
 ### 6.1 El motor
 
-El reconocimiento lo hace **Tesseract**, un OCR que corre en la propia máquina: no sale nada a internet y no tiene costo. A cambio devuelve un texto plano lleno de ruido, que hay que interpretar con reglas propias (`receiptParser.ts`).
+El reconocimiento lo hace **Tesseract**, un OCR que corre en la propia máquina: no sale nada a internet y no tiene costo. A cambio devuelve un texto plano lleno de ruido, que hay que interpretar con reglas propias (`lectorDeComprobantes.ts`).
 
 Antes de pasarlo por el OCR, la foto se preprocesa con `sharp`: se endereza según el dato de orientación de la cámara, se pasa a escala de grises y se agranda a 2400 px de ancho. Eso sube bastante el reconocimiento en fotos sacadas a mano.
 
