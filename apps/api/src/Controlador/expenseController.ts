@@ -7,8 +7,7 @@ import { safeUserSelect } from "../Utilidades/selects";
 import { buildEqualSplits } from "../Utilidades/splits";
 import { validatePayersSum } from "../Utilidades/payers";
 import { idsQueNoSonMiembros } from "../Utilidades/miembros";
-import { ParsedReceipt, parseReceiptText } from "../Utilidades/receiptParser";
-import { lecturaIADisponible, leerTicketConIA } from "../Utilidades/lectorTicketIA";
+import { parseReceiptText } from "../Utilidades/receiptParser";
 import { AuthedRequest } from "../Intermediarios/auth";
 
 const payerSchema = z.object({
@@ -176,48 +175,35 @@ export async function scanReceipt(req: AuthedRequest, res: Response) {
 
   const receiptUrl = `/uploads/${req.file.filename}`;
 
-  // Primero se intenta con IA (lee la foto y devuelve los ítems ya
-  // estructurados). Si no hay clave configurada o falla, se usa Tesseract.
-  let parsed: ParsedReceipt | null = null;
-  let motor: "ia" | "tesseract" = "tesseract";
+  let confidence = 0;
+  let text = "";
 
-  if (lecturaIADisponible()) {
-    parsed = await leerTicketConIA(req.file.path);
-    if (parsed) motor = "ia";
-  }
+  try {
+    // Escala de grises y contraste ayudan a Tesseract con fotos reales (poca
+    // luz, ángulo). Un threshold fijo (blanco/negro puro) se probó y resultó
+    // CONTRAPRODUCENTE: en fotos con luz pareja lo pierde todo, porque compite
+    // con la binarización adaptativa que Tesseract ya hace internamente, así
+    // que conviene dejarle esa parte a él.
+    const preprocessed = await sharp(req.file.path)
+      .rotate()
+      .grayscale()
+      .resize({ width: 2400, withoutEnlargement: false })
+      .normalize()
+      .toBuffer();
 
-  let confidence = parsed ? 1 : 0;
-
-  // Sin IA (o si la lectura con IA falló): OCR local con Tesseract.
-  if (!parsed) {
-    let text = "";
+    const worker = await createWorker("spa");
     try {
-      // Escala de grises + contraste ayuda a Tesseract con fotos reales (poca
-      // luz, ángulo). Un threshold fijo (blanco/negro puro) se probó y
-      // resultó CONTRAPRODUCENTE: en fotos con luz pareja lo pierde todo,
-      // porque compite con la binarización adaptativa que Tesseract ya hace
-      // internamente — mejor dejarle esa parte a él.
-      const preprocessed = await sharp(req.file.path)
-        .rotate()
-        .grayscale()
-        .resize({ width: 2400, withoutEnlargement: false })
-        .normalize()
-        .toBuffer();
-
-      const worker = await createWorker("spa");
-      try {
-        const result = await worker.recognize(preprocessed);
-        text = result.data.text;
-        confidence = Math.round(result.data.confidence) / 100;
-      } finally {
-        await worker.terminate();
-      }
-    } catch (err) {
-      console.error("[scanReceipt] falló el OCR:", err);
+      const result = await worker.recognize(preprocessed);
+      text = result.data.text;
+      confidence = Math.round(result.data.confidence) / 100;
+    } finally {
+      await worker.terminate();
     }
-
-    parsed = parseReceiptText(text);
+  } catch (err) {
+    console.error("[scanReceipt] falló el OCR:", err);
   }
+
+  const parsed = parseReceiptText(text);
 
   // Si no salió ni un monto ni un ítem, la lectura no sirvió (foto borrosa,
   // manuscrita, con mucho fondo). En ese caso no devolvemos el "comercio",
@@ -238,6 +224,5 @@ export async function scanReceipt(req: AuthedRequest, res: Response) {
     // comparaba la suma de los ítems contra un número que no era un total y
     // mostraba un aviso de "no coincide" que no quería decir nada.
     totalConfiable: parsed.totalConfiable,
-    motor,
   });
 }

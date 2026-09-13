@@ -1,8 +1,8 @@
-# Documentación de La Vaquita
+# Documentación
 
 Guía de la arquitectura del proyecto: qué es cada carpeta/archivo, para qué sirve, y dónde encontrarlo. Pensada para poder ubicarse rápido en el código sin tener que leer todo.
 
-## 1. ¿Qué es este proyecto?
+## 1. El proyecto
 
 **La Vaquita** es una app para grupos (viajes, convivencia, proyectos) que permite:
 
@@ -16,9 +16,9 @@ Es un **monorepo** con tres partes independientes que comparten una sola base de
 
 ```
 la-vaquita/
-├── apps/api/       → el servidor (backend): la única puerta a la base de datos
-├── apps/web/       → la app de navegador/escritorio (React)
-└── apps/mobile/    → la app de celular (React Native / Expo)
+├── apps/api/      el servidor: la única puerta a la base de datos
+├── apps/web/      la app de navegador (React)
+└── apps/mobile/   la app de celular (React Native y Expo)
 ```
 
 **Tecnologías principales:**
@@ -29,6 +29,7 @@ la-vaquita/
 | Web | React + Vite + Tailwind CSS + React Router |
 | Mobile | React Native + Expo + React Navigation |
 | Autenticación | JWT (token en el header `Authorization`) |
+| Lectura de comprobantes | Tesseract.js y sharp, corriendo en la propia máquina |
 | Email | Nodemailer (Gmail) |
 | Tests automáticos | Vitest (sobre los cálculos del backend) |
 
@@ -38,24 +39,24 @@ Dentro de cada app, las carpetas de código llevan el nombre de la capa a la que
 
 ---
 
-## 2. Backend — `apps/api/`
+## 2. Backend
 
-Es el equivalente al **Modelo + Controlador** de una arquitectura MVC clásica: acá vive la base de datos, las reglas de negocio, y las rutas que las exponen. Ni web ni mobile guardan ninguna lógica de negocio — solo la piden a la API y muestran el resultado.
+Es el equivalente al **Modelo + Controlador** de una arquitectura MVC clásica: acá vive la base de datos, las reglas de negocio, y las rutas que las exponen. Ni web ni mobile guardan ninguna lógica de negocio: solo la piden a la API y muestran el resultado.
 
 ```
 apps/api/
-├── prisma/schema.prisma   → dónde se definen las tablas (requisito de la herramienta Prisma)
+├── prisma/schema.prisma   donde se definen las tablas (lo exige Prisma)
 └── src/
-    ├── Modelo/            → EL MODELO: el cliente que consulta la base de datos
-    ├── Controlador/       → EL CONTROLADOR: la lógica de cada acción
-    ├── Rutas/             → conecta cada URL con su controlador
-    ├── Intermediarios/    → chequeos que corren antes del controlador (login, permisos)
-    └── Utilidades/        → cálculos y utilidades reutilizables
+    ├── Modelo/          EL MODELO: el cliente que consulta la base de datos
+    ├── Controlador/     EL CONTROLADOR: la lógica de cada acción
+    ├── Rutas/           conecta cada URL con su controlador
+    ├── Intermediarios/  chequeos previos al controlador (login, permisos)
+    └── Utilidades/      cálculos y utilidades reutilizables
 ```
 
-### 2.1 El Modelo — `apps/api/src/Modelo/` y `apps/api/prisma/schema.prisma`
+### 2.1 Modelo
 
-Las **tablas de la base de datos** (los modelos de datos en sí) están definidas en `apps/api/prisma/schema.prisma`, un solo archivo con todas ellas. Tienen que vivir en esa carpeta fija porque es la que espera la herramienta de Prisma para generar el cliente y las migraciones — moverlas rompería `npx prisma migrate` y `npx prisma generate`.
+Las **tablas de la base de datos** (los modelos de datos en sí) están definidas en `apps/api/prisma/schema.prisma`, un solo archivo con todas ellas. Tienen que vivir en esa carpeta fija porque es la que espera la herramienta de Prisma para generar el cliente y las migraciones: moverlas rompería `npx prisma migrate` y `npx prisma generate`.
 
 `apps/api/src/Modelo/prisma.ts` es **el cliente** que el resto del código importa para leer y escribir esas tablas (`import { prisma } from "../Modelo/prisma"`). En resumen: `prisma/schema.prisma` = qué tablas existen. `Modelo/prisma.ts` = el objeto que se usa en el código para consultarlas.
 
@@ -75,9 +76,9 @@ Las **tablas de la base de datos** (los modelos de datos en sí) están definida
 | `RotationGroup` | El orden de turnos de una tarea rotativa (una lista ordenada de usuarios y un cursor que indica a quién le toca ahora). |
 | `TaskCompletion` | El registro histórico de cada vez que se completó una tarea (quién, cuándo, cuánto tardó si tenía cronómetro). |
 
-**Cómo se calcula el saldo:** nunca se guarda un "saldo" en la base — siempre se recalcula en el momento a partir de `Expense` + `ExpensePayer` + `ExpenseSplit` + `Payment`. Eso evita que un saldo guardado quede desactualizado.
+**Cómo se calcula el saldo:** nunca se guarda un "saldo" en la base: siempre se recalcula en el momento a partir de `Expense` + `ExpensePayer` + `ExpenseSplit` + `Payment`. Eso evita que un saldo guardado quede desactualizado.
 
-### 2.2 El Controlador — `apps/api/src/Controlador/`
+### 2.2 Controlador
 
 Cada archivo agrupa las acciones sobre un mismo tema. Reciben el pedido, validan los datos (con la librería `zod`), hacen la consulta a la base con Prisma, y devuelven la respuesta.
 
@@ -90,7 +91,7 @@ Cada archivo agrupa las acciones sobre un mismo tema. Reciben el pedido, validan
 | `taskController.ts` | Controlador de Tareas | Listar/crear/editar/borrar tareas, marcarlas como completadas (calculando el tiempo si usan cronómetro), y rotar el turno si son rotativas. |
 | `paymentController.ts` | Controlador de Pagos | Registrar y deshacer un pago entre dos integrantes (para saldar cuentas). |
 
-### 2.3 Las Rutas — `apps/api/src/Rutas/`
+### 2.3 Rutas
 
 El "mapa" que conecta cada URL con la función del controlador que la atiende.
 
@@ -99,7 +100,7 @@ El "mapa" que conecta cada URL con la función del controlador que la atiende.
 | `authRoutes.ts` | Todo lo que empieza con `/api/auth/...` (registro, login, perfil, recuperar contraseña). |
 | `tripRoutes.ts` | Todo lo que empieza con `/api/trips/...` (viajes, gastos, tareas, pagos, categorías, invitaciones). Casi todo pasa primero por `requireAuth` (¿estás logueado?) y `requireTripMember` (¿sos parte de este viaje?). |
 
-### 2.4 Intermediarios (middleware) — `apps/api/src/Intermediarios/`
+### 2.4 Intermediarios
 
 Funciones que corren **antes** que el controlador, y pueden cortar el pedido si algo no está bien.
 
@@ -108,7 +109,7 @@ Funciones que corren **antes** que el controlador, y pueden cortar el pedido si 
 | `auth.ts` | Que el pedido traiga un token válido (`Authorization: Bearer ...`). Si no, responde 401 antes de llegar al controlador. |
 | `tripMember.ts` | Que el usuario logueado sea efectivamente miembro del viaje que está pidiendo. Evita que alguien vea/edite un viaje ajeno. |
 
-### 2.5 Utilidades — `apps/api/src/Utilidades/`
+### 2.5 Utilidades
 
 Cálculos que varios controladores necesitan, separados para no repetir código y poder testearlos solos (`*.test.ts` son los tests automáticos de cada uno).
 
@@ -128,17 +129,17 @@ Los archivos `*.test.ts` de esta carpeta son los tests automáticos: se corren c
 
 ---
 
-## 3. Web — `apps/web/` (la Vista de navegador/escritorio)
+## 3. Web
 
 ```
 apps/web/src/
-├── Vista/          → LA VISTA: una pantalla completa por ruta (ej. /trips/:id/gastos)
-├── Componentes/    → piezas reutilizables (modales, barra lateral, etc.)
-├── Contexto/       → estado compartido por toda la app
-└── Utilidades/     → cliente de la API, tipos, formateo
+├── Vista/         LA VISTA: una pantalla completa por ruta
+├── Componentes/   piezas reutilizables (modales, barra lateral)
+├── Contexto/      estado compartido por toda la app
+└── Utilidades/    cliente de la API, tipos, formateo
 ```
 
-### 3.1 La Vista — `apps/web/src/Vista/`
+### 3.1 Vista
 
 Cada archivo es una pantalla completa, asociada a una URL (definidas en `App.tsx`).
 
@@ -156,15 +157,15 @@ Cada archivo es una pantalla completa, asociada a una URL (definidas en `App.tsx
 | `Tasks.tsx` | Lista de tareas del viaje | `/trips/:id/tareas` |
 | `Participants.tsx` | Integrantes del viaje | `/trips/:id/participantes` |
 
-### 3.2 Componentes — `apps/web/src/Componentes/`
+### 3.2 Componentes
 
 Piezas de UI que se reusan desde varias pantallas (la mayoría son modales/ventanas emergentes).
 
 | Archivo | Qué es |
 |---|---|
-| `TripLayout.tsx` | El "marco" de todas las pantallas de un viaje: header con el nombre, botón invitar, y navegación — engloba a `Dashboard`, `Expenses`, `Tasks`, `Participants`. |
+| `TripLayout.tsx` | El "marco" de todas las pantallas de un viaje: header con el nombre, botón invitar, y navegación: engloba a `Dashboard`, `Expenses`, `Tasks`, `Participants`. |
 | `Sidebar.tsx` | La barra lateral de navegación (proyectos, cerrar sesión, modo oscuro). |
-| `NewExpenseModal.tsx` | Ventana para crear/editar un gasto — incluye la carga manual, el escaneo de comprobante con OCR, y la revisión de varios ítems detectados a la vez. |
+| `NewExpenseModal.tsx` | Ventana para crear/editar un gasto: incluye la carga manual, el escaneo de comprobante con OCR, y la revisión de varios ítems detectados a la vez. |
 | `NewTaskModal.tsx` | Ventana para crear/editar una tarea (manual o rotativa, con fechas o cronómetro). |
 | `EditTripModal.tsx` | Ventana para editar nombre/fechas del viaje, **administrar categorías** (crear, renombrar, borrar), y eliminar el viaje. |
 | `InviteModal.tsx` | Ventana para invitar participantes (genera el link, compartir por WhatsApp, o mandar por email). |
@@ -176,7 +177,7 @@ Piezas de UI que se reusan desde varias pantallas (la mayoría son modales/venta
 | `LiveTimer.tsx` | El cronómetro que se actualiza en vivo en una tarea con `timeTracked`. |
 | `Logo.tsx` | El logo de la app (SVG). |
 
-### 3.3 Contexto — `apps/web/src/Contexto/`
+### 3.3 Contexto
 
 Estado global disponible en cualquier componente sin tener que pasarlo a mano por props.
 
@@ -185,30 +186,30 @@ Estado global disponible en cualquier componente sin tener que pasarlo a mano po
 | `AuthContext.tsx` | El usuario logueado y su token; funciones de login/registro/logout/editar perfil. |
 | `ThemeContext.tsx` | Si el modo es claro u oscuro, guardado en `localStorage`. |
 
-### 3.4 Utilidades — `apps/web/src/Utilidades/`
+### 3.4 Utilidades
 
 | Archivo | Qué hace |
 |---|---|
-| `api.ts` | El único lugar que hace `fetch` a la API — una función por endpoint (`api.createExpense(...)`, `api.login(...)`, etc.). Agrega el token de sesión automáticamente. |
+| `api.ts` | El único lugar que hace `fetch` a la API: una función por endpoint (`api.createExpense(...)`, `api.login(...)`, etc.). Agrega el token de sesión automáticamente. |
 | `types.ts` | Las formas (`interface`) de los datos que devuelve la API: `User`, `Trip`, `Expense`, `Task`, etc. |
 | `format.ts` | Funciones de formateo: plata (`formatMoney`), fechas, iniciales de un nombre, color de avatar, y `paidBySummary` (arma el texto "Pagó: X" para uno o varios pagadores). |
 | `useAutoRefresh.ts` | Vuelve a pedir los datos cada pocos segundos y al volver a la pestaña, para que lo que carga un integrante aparezca solo en la pantalla de los demás. |
 
 ---
 
-## 4. Mobile — `apps/mobile/` (la Vista de celular)
+## 4. Celular
 
 Misma idea que la web, adaptada a React Native (no hay URLs, la navegación es por pila de pantallas con React Navigation, definida en `App.tsx`).
 
 ```
 apps/mobile/src/
-├── Vista/         → una pantalla por acción (equivalente a las vistas de la web)
-├── Componentes/   → piezas reutilizables
-├── Contexto/      → estado compartido
-└── Utilidades/    → cliente de la API, tipos, formateo, colores
+├── Vista/         una pantalla por acción, como en la web
+├── Componentes/   piezas reutilizables
+├── Contexto/      estado compartido
+└── Utilidades/    cliente de la API, tipos, formateo, colores
 ```
 
-### 4.1 La Vista — `apps/mobile/src/Vista/`
+### 4.1 Vista
 
 | Archivo | Pantalla |
 |---|---|
@@ -230,7 +231,7 @@ apps/mobile/src/
 | `EditProfileScreen.tsx` | Editar mi perfil |
 | `SettingsScreen.tsx` | Ajustes: mi perfil, modo oscuro, volver a proyectos, eliminar viaje |
 
-### 4.2 Componentes — `apps/mobile/src/Componentes/`
+### 4.2 Componentes
 
 | Archivo | Qué es |
 |---|---|
@@ -239,15 +240,15 @@ apps/mobile/src/
 | `LiveTimer.tsx` | Cronómetro en vivo. |
 | `Logo.tsx` | Logo de la app. |
 
-### 4.3 Contexto — `apps/mobile/src/Contexto/`
+### 4.3 Contexto
 
 | Archivo | Qué guarda |
 |---|---|
 | `AuthContext.tsx` | Usuario logueado y token (persistido con `AsyncStorage`). |
 | `ThemeContext.tsx` | Modo claro/oscuro. |
-| `TripContext.tsx` | **Cuál es el viaje actualmente abierto** — no existe en la web porque ahí el viaje activo se identifica por la URL (`/trips/:id`); en mobile no hay URL, así que se guarda acá. |
+| `TripContext.tsx` | **Cuál es el viaje actualmente abierto**: no existe en la web porque ahí el viaje activo se identifica por la URL (`/trips/:id`); en mobile no hay URL, así que se guarda acá. |
 
-### 4.4 Utilidades — `apps/mobile/src/Utilidades/`
+### 4.4 Utilidades
 
 | Archivo | Qué hace |
 |---|---|
@@ -259,7 +260,7 @@ apps/mobile/src/
 
 ---
 
-## 5. Cómo se conecta todo: ejemplo de un pedido completo
+## 5. Un pedido completo
 
 Para ver las piezas trabajando juntas, así es el camino de **"crear un gasto"** desde el celular:
 
@@ -271,23 +272,23 @@ Para ver las piezas trabajando juntas, así es el camino de **"crear un gasto"**
 6. La respuesta vuelve al celular, que navega hacia atrás y refresca la lista.
 7. La próxima vez que alguien mira el Dashboard, `getTripSummary` (en `Controlador/tripController.ts`) usa `computeTripBalances` (en `Utilidades/balances.ts`) para recalcular el saldo de todos, leyendo ese gasto recién creado.
 
-Ese mismo camino (Vista → `api.ts` → Rutas → Intermediarios → Controlador → Modelo → base de datos) se repite para cualquier acción de la app, cambiando solo el archivo/función de cada paso.
+Ese mismo camino (Vista `api.ts` Rutas Intermediarios Controlador Modelo base de datos) se repite para cualquier acción de la app, cambiando solo el archivo/función de cada paso.
 
 ---
 
-## 6. Cómo se lee un comprobante
+## 6. Lectura de comprobantes
 
 Es la parte con más trabajo del proyecto y la más fácil de malinterpretar, así que va explicada aparte. Todo el camino arranca en `scanReceipt` (`Controlador/expenseController.ts`).
 
-### 6.1 Los dos motores
+### 6.1 El motor
 
+El reconocimiento lo hace **Tesseract**, un OCR que corre en la propia máquina: no sale nada a internet y no tiene costo. A cambio devuelve un texto plano lleno de ruido, que hay que interpretar con reglas propias (`receiptParser.ts`).
 
-| Motor | Cuándo se usa | Cómo anda |
-|---|---|---|
+Antes de pasarlo por el OCR, la foto se preprocesa con `sharp`: se endereza según el dato de orientación de la cámara, se pasa a escala de grises y se agranda a 2400 px de ancho. Eso sube bastante el reconocimiento en fotos sacadas a mano.
 
-La respuesta incluye el campo `motor` justamente para saber cuál de los dos leyó.
+El escaneo nunca corta la carga del gasto: si la lectura falla, devuelve vacío y el formulario queda para completar a mano.
 
-### 6.2 Qué hace el parser con el texto de Tesseract
+### 6.2 Del texto a los ítems
 
 El OCR no devuelve una tabla, devuelve renglones sueltos y sucios como este:
 
@@ -302,7 +303,7 @@ Ahí hay ruido del borde del papel (`- l -`), el nombre, el código de renglón 
 3. **Descartar el pie.** Las líneas de subtotal, total, saldo anterior, bultos, vacíos e IVA no son productos y se filtran por palabra clave.
 4. **Rescatar lo ilegible.** Si el monto se lee pero el nombre no, el ítem entra igual como "Sin descripción": perder un gasto de la división es peor que tener que renombrarlo.
 
-### 6.3 El total y por qué se avisa (o no)
+### 6.3 El total
 
 `amount` puede venir de dos lugares distintos, y no significan lo mismo:
 
@@ -313,10 +314,11 @@ El formulario solo compara la suma de los ítems contra el total cuando `totalCo
 
 ### 6.4 Qué esperar
 
+La lectura es **un punto de partida, no un resultado final**: la pantalla de carga muestra todos los ítems con casilleros para revisarlos, editarlos o descartarlos antes de guardar. Sobre una foto real de un ticket de verdulería con la impresión gastada recupera alrededor de 10 de los 14 renglones con el monto correcto.
 
 ---
 
-## 7. Limitaciones conocidas
+## 7. Limitaciones
 
 Cosas que el proyecto **no** resuelve hoy, anotadas a propósito para no dar por hecho lo que no está:
 

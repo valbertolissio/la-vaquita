@@ -1,34 +1,34 @@
-# La Vaquita 🐄
+# La Vaquita
 
 App para gestionar de forma colaborativa los gastos y las tareas de un proyecto grupal: cada gasto se puede dividir entre los participantes que corresponda, el sistema calcula automáticamente cuánto le debe cada uno a cada uno, y las tareas del viaje (cocinar, lavar los platos, limpiar...) se pueden asignar de forma manual o por turnos rotativos.
 
-## Estructura del proyecto (monorepo)
+## Estructura
 
 ```
 la-vaquita/
 ├── apps/
-│   ├── api/      Backend: Node + Express + TypeScript + Prisma + PostgreSQL
-│   ├── web/      Web: React + Vite + TypeScript + Tailwind (vista "escritorio")
-│   └── mobile/   App móvil: React Native + Expo + TypeScript
+│   ├── api/      Backend: Node, Express, TypeScript, Prisma y PostgreSQL
+│   ├── web/      Web: React, Vite, TypeScript y Tailwind
+│   └── mobile/   App de celular: React Native, Expo y TypeScript
 └── packages/
     └── shared/   Tipos compartidos (referencia)
 ```
 
 Las tres apps consumen la **misma API REST**, así que la lógica de negocio (cálculo de saldos, turnos rotativos, invitaciones) vive en un solo lugar.
 
-## Modelo de base de datos
+## Base de datos
 
 Definido en [`apps/api/prisma/schema.prisma`](apps/api/prisma/schema.prisma). Tablas principales:
 
-- **users** — cuentas de usuario
-- **trips** — viajes, con fecha de inicio/fin y moneda
-- **trip_members** — tabla puente usuario↔viaje (rol: organizador o integrante)
-- **invitations** — invitaciones pendientes por email
-- **categories** — categorías de gasto por viaje (Alimentación, Transporte, etc.)
-- **expenses** + **expense_splits** — cada gasto y entre quiénes se divide (el saldo de cada persona se **calcula** a partir de estas dos tablas, no se guarda duplicado)
-- **tasks** + **rotation_groups** + **task_completions** — tareas del viaje, con asignación manual o rotativa (al completarse una tarea rotativa, el turno pasa automáticamente al siguiente integrante)
+- **users**: cuentas de usuario
+- **trips**: viajes, con fecha de inicio/fin y moneda
+- **trip_members**: tabla puente usuario/viaje (rol: organizador o integrante)
+- **invitations**: invitaciones pendientes por email
+- **categories**: categorías de gasto por viaje (Alimentación, Transporte, etc.)
+- **expenses** + **expense_splits**: cada gasto y entre quiénes se divide (el saldo de cada persona se **calcula** a partir de estas dos tablas, no se guarda duplicado)
+- **tasks** + **rotation_groups** + **task_completions**: tareas del viaje, con asignación manual o rotativa (al completarse una tarea rotativa, el turno pasa automáticamente al siguiente integrante)
 
-## Requisitos previos
+## Requisitos
 
 - [Node.js 20+](https://nodejs.org/) (ya tenés Node 24 instalado)
 - [PostgreSQL](https://www.postgresql.org/download/) corriendo localmente (o una instancia en la nube, ej. [Neon](https://neon.tech) o [Supabase](https://supabase.com), gratis)
@@ -92,30 +92,31 @@ Se abre en `http://localhost:5173`. Iniciá sesión con un usuario del seed (o r
 npm run dev:mobile
 ```
 
-Esto abre Expo. Escaneá el QR con la app **Expo Go** desde tu celular (tiene que estar en la misma red Wi-Fi que tu compu). Si probás en el emulador de Android, cambiá `API_URL` en `apps/mobile/src/lib/api.ts` de `localhost` a `10.0.2.2`.
+Esto abre Expo. Escaneá el QR con la app **Expo Go** desde tu celular (tiene que estar en la misma red Wi-Fi que tu compu). Si probás en el emulador de Android, cambiá `API_URL` en `apps/mobile/src/Utilidades/api.ts` de `localhost` a `10.0.2.2`.
 
-## Cómo trabajar esto en VS Code
+## Trabajar en VS Code
 
 1. Abrí la carpeta `la-vaquita/` como carpeta raíz del workspace (`File > Open Folder`).
 2. Usá tres terminales integradas (`` Ctrl+` ``) para correr API, web y mobile en simultáneo.
-3. Prisma Studio (interfaz visual para ver/editar los datos de la base) se levanta con:
+3. Prisma Studio (interfaz visual para ver y editar los datos de la base) se levanta con:
+
    ```bash
    npm run db:studio
    ```
+
 4. Cuando cambies el `schema.prisma`, corré `npm run db:migrate` de nuevo para generar y aplicar la migración.
 
 ## Tests
 
-La lógica más sensible del proyecto (cálculo de saldos, simplificación de deudas, división de gastos, avance de turnos rotativos) tiene tests unitarios con Vitest en `apps/api/src/lib/*.test.ts`. Para correrlos:
+La lógica más sensible del proyecto (cálculo de saldos, simplificación de deudas, división de gastos, avance de turnos rotativos) tiene tests unitarios con Vitest en `apps/api/src/Utilidades/*.test.ts`. Para correrlos:
 
 ```bash
 npm run test:api
 ```
 
-## Próximos pasos sugeridos
+## Próximos pasos
 
-- Conectar un proveedor real de OCR (ej. Google Cloud Vision o Tesseract.js) en `apps/api/src/controllers/expenseController.ts` → `scanReceipt`, que hoy es un placeholder que sólo guarda la imagen.
-- Subir comprobantes/imágenes a un storage externo (S3, Cloudinary) en vez de al disco local (`apps/api/uploads/`), pensando en producción.
-- Mandar las invitaciones por email de verdad (hoy generan un link que hay que compartir a mano) — necesita una cuenta en un proveedor tipo Resend o SendGrid.
-- Recordatorios/notificaciones para tareas con fecha límite o cuyo turno rotativo cambió.
-- Deploy: API en Railway/Render, web en Vercel/Netlify, base de datos en Neon/Supabase.
+- Guardar los comprobantes en un storage externo (S3, Cloudinary) en vez del disco local (`apps/api/uploads/`), y pedir sesión para verlos.
+- Limitar los intentos de login, para que no se puedan probar contraseñas a repetición.
+- Recordatorios para tareas con fecha límite o cuyo turno rotativo cambió.
+- Publicar: API en Railway o Render, web en Vercel o Netlify, base de datos en Neon o Supabase.
