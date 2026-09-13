@@ -33,7 +33,7 @@ const updateTaskSchema = z.object({
 });
 
 export async function listarTareas(req: PedidoAutenticado, res: Response) {
-  const tasks = await prisma.task.findMany({
+  const tasks = await prisma.tarea.findMany({
     where: { tripId: req.params.tripId },
     include: {
       assignedTo: { select: camposPublicosDelUsuario },
@@ -70,10 +70,10 @@ export async function crearTarea(req: PedidoAutenticado, res: Response) {
     if (!rotationMembers || rotationMembers.length < 2) {
       return res.status(400).json({ error: "Un turno rotativo necesita al menos 2 integrantes" });
     }
-    const group = await prisma.rotationGroup.create({
+    const group = await prisma.grupoDeRotacion.create({
       data: { tripId, name: rotationName ?? data.title, memberOrder: rotationMembers, cursor: 0 },
     });
-    const task = await prisma.task.create({
+    const task = await prisma.tarea.create({
       data: {
         ...data,
         tripId,
@@ -87,7 +87,7 @@ export async function crearTarea(req: PedidoAutenticado, res: Response) {
     return res.status(201).json(task);
   }
 
-  const task = await prisma.task.create({
+  const task = await prisma.tarea.create({
     data: { ...data, tripId, createdById: req.userId!, assignmentType },
     include: { assignedTo: { select: camposPublicosDelUsuario } },
   });
@@ -97,7 +97,7 @@ export async function crearTarea(req: PedidoAutenticado, res: Response) {
 export async function actualizarTarea(req: PedidoAutenticado, res: Response) {
   // Filtrar también por tripId: ser miembro del viaje de la URL no puede
   // habilitar a tocar una tarea que pertenece a otro viaje.
-  const task = await prisma.task.findFirst({
+  const task = await prisma.tarea.findFirst({
     where: { id: req.params.taskId, tripId: req.params.tripId },
     include: { rotationGroup: true },
   });
@@ -128,14 +128,14 @@ export async function actualizarTarea(req: PedidoAutenticado, res: Response) {
   }
 
   if (task.assignmentType === "ROTATING" && task.rotationGroupId && rotationMembers && rotationMembers.length >= 2) {
-    await prisma.rotationGroup.update({
+    await prisma.grupoDeRotacion.update({
       where: { id: task.rotationGroupId },
       data: { memberOrder: rotationMembers, cursor: 0 },
     });
     (data as any).assignedToId = rotationMembers[0];
   }
 
-  const updated = await prisma.task.update({
+  const updated = await prisma.tarea.update({
     where: { id: task.id },
     data,
     include: { assignedTo: { select: camposPublicosDelUsuario }, rotationGroup: true },
@@ -153,7 +153,7 @@ export async function actualizarTarea(req: PedidoAutenticado, res: Response) {
  * siempre hay a quién le toca a continuación).
  */
 export async function completarTarea(req: PedidoAutenticado, res: Response) {
-  const task = await prisma.task.findFirst({
+  const task = await prisma.tarea.findFirst({
     where: { id: req.params.taskId, tripId: req.params.tripId },
     include: { rotationGroup: true },
   });
@@ -167,7 +167,7 @@ export async function completarTarea(req: PedidoAutenticado, res: Response) {
   const now = new Date();
   const durationSeconds = parsed.data.durationSeconds ?? calcularDuracionEnSegundos(task.startDate, now);
 
-  await prisma.taskCompletion.create({
+  await prisma.tareaCompletada.create({
     data: { taskId: task.id, completedById: req.userId!, completedAt: now, durationSeconds: durationSeconds ?? undefined },
   });
 
@@ -177,11 +177,11 @@ export async function completarTarea(req: PedidoAutenticado, res: Response) {
   if (task.assignmentType === "ROTATING" && task.rotationGroup) {
     const order = task.rotationGroup.memberOrder;
     const nextCursor = siguienteTurno(order, task.rotationGroup.cursor);
-    await prisma.rotationGroup.update({
+    await prisma.grupoDeRotacion.update({
       where: { id: task.rotationGroup.id },
       data: { cursor: nextCursor },
     });
-    await prisma.task.update({
+    await prisma.tarea.update({
       where: { id: task.id },
       data: {
         status: "PENDING",
@@ -195,13 +195,13 @@ export async function completarTarea(req: PedidoAutenticado, res: Response) {
       },
     });
     rotated = true;
-    const nextUser = await prisma.user.findUnique({ where: { id: order[nextCursor] }, select: camposPublicosDelUsuario });
+    const nextUser = await prisma.usuario.findUnique({ where: { id: order[nextCursor] }, select: camposPublicosDelUsuario });
     if (nextUser) nextAssignee = { id: nextUser.id, name: nextUser.nickname || nextUser.name };
   } else {
-    await prisma.task.update({ where: { id: task.id }, data: { status: "DONE" } });
+    await prisma.tarea.update({ where: { id: task.id }, data: { status: "DONE" } });
   }
 
-  const updated = await prisma.task.findUnique({
+  const updated = await prisma.tarea.findUnique({
     where: { id: task.id },
     include: { assignedTo: { select: camposPublicosDelUsuario } },
   });
@@ -216,23 +216,23 @@ export async function completarTarea(req: PedidoAutenticado, res: Response) {
  * alguien.
  */
 export async function descompletarTarea(req: PedidoAutenticado, res: Response) {
-  const task = await prisma.task.findFirst({ where: { id: req.params.taskId, tripId: req.params.tripId } });
+  const task = await prisma.tarea.findFirst({ where: { id: req.params.taskId, tripId: req.params.tripId } });
   if (!task) return res.status(404).json({ error: "Tarea no encontrada" });
   if (task.status !== "DONE") {
     return res.status(400).json({ error: "La tarea no está marcada como hecha" });
   }
 
-  const lastCompletion = await prisma.taskCompletion.findFirst({
+  const lastCompletion = await prisma.tareaCompletada.findFirst({
     where: { taskId: task.id },
     orderBy: { completedAt: "desc" },
   });
 
   await prisma.$transaction([
-    ...(lastCompletion ? [prisma.taskCompletion.delete({ where: { id: lastCompletion.id } })] : []),
-    prisma.task.update({ where: { id: task.id }, data: { status: "PENDING" } }),
+    ...(lastCompletion ? [prisma.tareaCompletada.delete({ where: { id: lastCompletion.id } })] : []),
+    prisma.tarea.update({ where: { id: task.id }, data: { status: "PENDING" } }),
   ]);
 
-  const updated = await prisma.task.findUnique({
+  const updated = await prisma.tarea.findUnique({
     where: { id: task.id },
     include: { assignedTo: { select: camposPublicosDelUsuario } },
   });
@@ -240,12 +240,12 @@ export async function descompletarTarea(req: PedidoAutenticado, res: Response) {
 }
 
 export async function eliminarTarea(req: PedidoAutenticado, res: Response) {
-  const task = await prisma.task.findFirst({
+  const task = await prisma.tarea.findFirst({
     where: { id: req.params.taskId, tripId: req.params.tripId },
     select: { id: true },
   });
   if (!task) return res.status(404).json({ error: "Tarea no encontrada" });
 
-  await prisma.task.delete({ where: { id: task.id } });
+  await prisma.tarea.delete({ where: { id: task.id } });
   res.status(204).send();
 }

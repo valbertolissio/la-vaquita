@@ -41,13 +41,13 @@ export async function registrarUsuario(req: Request, res: Response) {
   }
   const { name, email, password } = parsed.data;
 
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = await prisma.usuario.findUnique({ where: { email } });
   if (existing) {
     return res.status(409).json({ error: "Ya existe una cuenta con ese email" });
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({
+  const user = await prisma.usuario.create({
     data: { name, email, passwordHash },
   });
 
@@ -72,7 +72,7 @@ export async function iniciarSesion(req: Request, res: Response) {
   }
   const { email, password } = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.usuario.findUnique({ where: { email } });
   if (!user) {
     return res.status(401).json({ error: "Credenciales incorrectas" });
   }
@@ -97,7 +97,7 @@ export async function iniciarSesion(req: Request, res: Response) {
 }
 
 export async function miPerfil(req: Request & { userId?: string }, res: Response) {
-  const user = await prisma.user.findUnique({
+  const user = await prisma.usuario.findUnique({
     where: { id: req.userId },
     select: { id: true, name: true, email: true, avatarUrl: true, nickname: true, avatarColor: true, createdAt: true },
   });
@@ -110,7 +110,7 @@ export async function actualizarMiPerfil(req: Request & { userId?: string }, res
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.issues[0].message });
   }
-  const user = await prisma.user.update({
+  const user = await prisma.usuario.update({
     where: { id: req.userId },
     data: parsed.data,
     select: { id: true, name: true, email: true, avatarUrl: true, nickname: true, avatarColor: true },
@@ -127,10 +127,10 @@ export async function olvideMiContrasena(req: Request, res: Response) {
     return res.status(400).json({ error: parsed.error.issues[0].message });
   }
 
-  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  const user = await prisma.usuario.findUnique({ where: { email: parsed.data.email } });
   if (user) {
     const token = crypto.randomBytes(24).toString("hex");
-    await prisma.passwordResetToken.create({
+    await prisma.tokenDeRecuperacion.create({
       data: {
         userId: user.id,
         token,
@@ -159,15 +159,15 @@ export async function restablecerContrasena(req: Request, res: Response) {
   }
   const { token, password } = parsed.data;
 
-  const resetToken = await prisma.passwordResetToken.findUnique({ where: { token } });
+  const resetToken = await prisma.tokenDeRecuperacion.findUnique({ where: { token } });
   if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
     return res.status(400).json({ error: "El link para restablecer la contraseña es inválido o venció" });
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.$transaction([
-    prisma.user.update({ where: { id: resetToken.userId }, data: { passwordHash } }),
-    prisma.passwordResetToken.update({ where: { id: resetToken.id }, data: { usedAt: new Date() } }),
+    prisma.usuario.update({ where: { id: resetToken.userId }, data: { passwordHash } }),
+    prisma.tokenDeRecuperacion.update({ where: { id: resetToken.id }, data: { usedAt: new Date() } }),
   ]);
 
   res.json({ message: "Contraseña actualizada" });

@@ -21,14 +21,14 @@ export async function crearCategoria(req: PedidoAutenticado, res: Response) {
     return res.status(400).json({ error: parsed.error.issues[0].message });
   }
 
-  const existing = await prisma.category.findUnique({
+  const existing = await prisma.categoria.findUnique({
     where: { tripId_name: { tripId: req.params.tripId, name: parsed.data.name } },
   });
   if (existing) {
     return res.status(409).json({ error: "Ya existe una categoría con ese nombre" });
   }
 
-  const category = await prisma.category.create({
+  const category = await prisma.categoria.create({
     data: { ...parsed.data, tripId: req.params.tripId },
   });
   res.status(201).json(category);
@@ -40,7 +40,7 @@ export async function actualizarCategoria(req: PedidoAutenticado, res: Response)
     return res.status(400).json({ error: parsed.error.issues[0].message });
   }
 
-  const category = await prisma.category.findFirst({
+  const category = await prisma.categoria.findFirst({
     where: { id: req.params.categoryId, tripId: req.params.tripId },
   });
   if (!category) {
@@ -48,7 +48,7 @@ export async function actualizarCategoria(req: PedidoAutenticado, res: Response)
   }
 
   if (parsed.data.name && parsed.data.name !== category.name) {
-    const existing = await prisma.category.findUnique({
+    const existing = await prisma.categoria.findUnique({
       where: { tripId_name: { tripId: req.params.tripId, name: parsed.data.name } },
     });
     if (existing) {
@@ -56,7 +56,7 @@ export async function actualizarCategoria(req: PedidoAutenticado, res: Response)
     }
   }
 
-  const updated = await prisma.category.update({
+  const updated = await prisma.categoria.update({
     where: { id: category.id },
     data: parsed.data,
   });
@@ -64,18 +64,18 @@ export async function actualizarCategoria(req: PedidoAutenticado, res: Response)
 }
 
 export async function eliminarCategoria(req: PedidoAutenticado, res: Response) {
-  const category = await prisma.category.findFirst({
+  const category = await prisma.categoria.findFirst({
     where: { id: req.params.categoryId, tripId: req.params.tripId },
   });
   if (!category) {
     return res.status(404).json({ error: "Categoría no encontrada" });
   }
 
-  const usageCount = await prisma.expense.count({ where: { categoryId: category.id } });
+  const usageCount = await prisma.gasto.count({ where: { categoryId: category.id } });
   if (usageCount > 0) {
     return res.status(409).json({ error: "No se puede eliminar una categoría que ya tiene gastos cargados" });
   }
 
-  await prisma.category.delete({ where: { id: category.id } });
+  await prisma.categoria.delete({ where: { id: category.id } });
   res.status(204).send();
 }

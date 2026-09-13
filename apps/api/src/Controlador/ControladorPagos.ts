@@ -13,7 +13,7 @@ const createPaymentSchema = z.object({
 });
 
 export async function listarPagos(req: PedidoAutenticado, res: Response) {
-  const payments = await prisma.payment.findMany({
+  const payments = await prisma.pago.findMany({
     where: { tripId: req.params.tripId },
     include: { fromUser: { select: camposPublicosDelUsuario }, toUser: { select: camposPublicosDelUsuario } },
     orderBy: { createdAt: "desc" },
@@ -39,7 +39,7 @@ export async function crearPago(req: PedidoAutenticado, res: Response) {
     return res.status(400).json({ error: "El pago tiene que ser entre integrantes del proyecto" });
   }
 
-  const payment = await prisma.payment.create({
+  const payment = await prisma.pago.create({
     data: { tripId: req.params.tripId, fromUserId, toUserId, amount, note },
     include: { fromUser: { select: camposPublicosDelUsuario }, toUser: { select: camposPublicosDelUsuario } },
   });
@@ -48,12 +48,12 @@ export async function crearPago(req: PedidoAutenticado, res: Response) {
 }
 
 export async function eliminarPago(req: PedidoAutenticado, res: Response) {
-  const payment = await prisma.payment.findFirst({ where: { id: req.params.paymentId, tripId: req.params.tripId } });
+  const payment = await prisma.pago.findFirst({ where: { id: req.params.paymentId, tripId: req.params.tripId } });
   if (!payment) return res.status(404).json({ error: "Pago no encontrado" });
   if (req.userId !== payment.fromUserId && req.userId !== payment.toUserId) {
     return res.status(403).json({ error: "Solo quien pagó o quien recibió puede deshacer este pago" });
   }
 
-  await prisma.payment.delete({ where: { id: req.params.paymentId } });
+  await prisma.pago.delete({ where: { id: req.params.paymentId } });
   res.status(204).send();
 }

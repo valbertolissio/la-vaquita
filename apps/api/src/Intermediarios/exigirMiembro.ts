@@ -4,7 +4,7 @@ import { PedidoAutenticado } from "./exigirSesion";
 
 export async function exigirMiembro(req: PedidoAutenticado, res: Response, next: NextFunction) {
   const tripId = req.params.tripId;
-  const membership = await prisma.tripMember.findUnique({
+  const membership = await prisma.participante.findUnique({
     where: { tripId_userId: { tripId, userId: req.userId! } },
   });
 

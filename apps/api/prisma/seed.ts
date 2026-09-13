@@ -14,10 +14,10 @@ async function main() {
       { name: "Fer", email: "fer@lavaquita.app" },
       { name: "Luli", email: "luli@lavaquita.app" },
       { name: "Tomy", email: "tomy@lavaquita.app" },
-    ].map((u) => prisma.user.upsert({ where: { email: u.email }, update: {}, create: { ...u, passwordHash: password } }))
+    ].map((u) => prisma.usuario.upsert({ where: { email: u.email }, update: {}, create: { ...u, passwordHash: password } }))
   );
 
-  const trip = await prisma.trip.create({
+  const trip = await prisma.proyecto.create({
     data: {
       name: "Bariloche 2025",
       description: "Viaje grupal a Bariloche",
@@ -53,7 +53,7 @@ async function main() {
     return splits;
   };
 
-  await prisma.expense.create({
+  await prisma.gasto.create({
     data: {
       tripId: trip.id,
       description: "Supermercado",
@@ -66,7 +66,7 @@ async function main() {
     },
   });
 
-  await prisma.expense.create({
+  await prisma.gasto.create({
     data: {
       tripId: trip.id,
       description: "Cena en restaurante",
@@ -79,7 +79,7 @@ async function main() {
     },
   });
 
-  await prisma.expense.create({
+  await prisma.gasto.create({
     data: {
       tripId: trip.id,
       description: "Combustible",
@@ -92,7 +92,7 @@ async function main() {
     },
   });
 
-  await prisma.expense.create({
+  await prisma.gasto.create({
     data: {
       tripId: trip.id,
       description: "Paseo en barco",
@@ -105,7 +105,7 @@ async function main() {
     },
   });
 
-  await prisma.expense.create({
+  await prisma.gasto.create({
     data: {
       tripId: trip.id,
       description: "Alquiler de cabaña",
@@ -118,7 +118,7 @@ async function main() {
     },
   });
 
-  await prisma.task.createMany({
+  await prisma.tarea.createMany({
     data: [
       { tripId: trip.id, title: "Cocinar cena", assignedToId: magdalena.id, dueDate: new Date("2025-07-15"), createdById: valentina.id },
       { tripId: trip.id, title: "Lavar los platos", assignedToId: juani.id, dueDate: new Date("2025-07-15"), createdById: valentina.id },

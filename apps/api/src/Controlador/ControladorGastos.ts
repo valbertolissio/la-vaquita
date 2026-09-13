@@ -44,7 +44,7 @@ const expenseInclude = {
 } as const;
 
 export async function listarGastos(req: PedidoAutenticado, res: Response) {
-  const expenses = await prisma.expense.findMany({
+  const expenses = await prisma.gasto.findMany({
     where: { tripId: req.params.tripId },
     include: expenseInclude,
     // Cuando varios gastos comparten exactamente la misma fecha (ej. varios
@@ -72,7 +72,7 @@ export async function crearGasto(req: PedidoAutenticado, res: Response) {
 
   const splits = dividirEnPartesIguales(data.amount, splitBetween);
 
-  const expense = await prisma.expense.create({
+  const expense = await prisma.gasto.create({
     data: {
       ...data,
       tripId: req.params.tripId,
@@ -89,7 +89,7 @@ export async function crearGasto(req: PedidoAutenticado, res: Response) {
 export async function actualizarGasto(req: PedidoAutenticado, res: Response) {
   // Filtrar también por tripId: ser miembro del viaje de la URL no puede
   // habilitar a tocar un gasto que pertenece a otro viaje.
-  const expense = await prisma.expense.findFirst({
+  const expense = await prisma.gasto.findFirst({
     where: { id: req.params.expenseId, tripId: req.params.tripId },
     include: { splits: true, payers: true },
   });
@@ -129,18 +129,18 @@ export async function actualizarGasto(req: PedidoAutenticado, res: Response) {
   const updated = await prisma.$transaction(async (tx) => {
     if (needsResplit) {
       const memberIds = splitBetween ?? expense.splits.map((s) => s.userId);
-      await tx.expenseSplit.deleteMany({ where: { expenseId: expense.id } });
-      await tx.expenseSplit.createMany({
+      await tx.divisionDelGasto.deleteMany({ where: { expenseId: expense.id } });
+      await tx.divisionDelGasto.createMany({
         data: dividirEnPartesIguales(finalAmount, memberIds).map((s) => ({ ...s, expenseId: expense.id })),
       });
     }
     if (finalPayers) {
-      await tx.expensePayer.deleteMany({ where: { expenseId: expense.id } });
-      await tx.expensePayer.createMany({
+      await tx.pagadorDelGasto.deleteMany({ where: { expenseId: expense.id } });
+      await tx.pagadorDelGasto.createMany({
         data: finalPayers.map((p) => ({ ...p, expenseId: expense.id })),
       });
     }
-    return tx.expense.update({
+    return tx.gasto.update({
       where: { id: expense.id },
       data,
       include: expenseInclude,
@@ -151,13 +151,13 @@ export async function actualizarGasto(req: PedidoAutenticado, res: Response) {
 }
 
 export async function eliminarGasto(req: PedidoAutenticado, res: Response) {
-  const expense = await prisma.expense.findFirst({
+  const expense = await prisma.gasto.findFirst({
     where: { id: req.params.expenseId, tripId: req.params.tripId },
     select: { id: true },
   });
   if (!expense) return res.status(404).json({ error: "Gasto no encontrado" });
 
-  await prisma.expense.delete({ where: { id: expense.id } });
+  await prisma.gasto.delete({ where: { id: expense.id } });
   res.status(204).send();
 }
 

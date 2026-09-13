@@ -36,14 +36,14 @@ const updateTripSchema = z.object({
 });
 
 async function esOrganizador(tripId: string, userId: string) {
-  const membership = await prisma.tripMember.findUnique({
+  const membership = await prisma.participante.findUnique({
     where: { tripId_userId: { tripId, userId } },
   });
   return membership?.role === "ORGANIZER";
 }
 
 export async function listarProyectos(req: PedidoAutenticado, res: Response) {
-  const trips = await prisma.trip.findMany({
+  const trips = await prisma.proyecto.findMany({
     where: { members: { some: { userId: req.userId } } },
     include: { members: true },
     orderBy: { startDate: "desc" },
@@ -57,7 +57,7 @@ export async function crearProyecto(req: PedidoAutenticado, res: Response) {
     return res.status(400).json({ error: parsed.error.issues[0].message });
   }
 
-  const trip = await prisma.trip.create({
+  const trip = await prisma.proyecto.create({
     data: {
       ...parsed.data,
       createdById: req.userId!,
@@ -71,7 +71,7 @@ export async function crearProyecto(req: PedidoAutenticado, res: Response) {
 }
 
 export async function obtenerProyecto(req: PedidoAutenticado, res: Response) {
-  const trip = await prisma.trip.findUnique({
+  const trip = await prisma.proyecto.findUnique({
     where: { id: req.params.tripId },
     include: {
       members: { include: { user: { select: camposPublicosDelUsuario } } },
@@ -87,23 +87,23 @@ export async function obtenerResumenDelProyecto(req: PedidoAutenticado, res: Res
   const tripId = req.params.tripId;
 
   const [expenses, pendingTasks, balances, timeCompletions, paidToMeAgg] = await Promise.all([
-    prisma.expense.findMany({
+    prisma.gasto.findMany({
       where: { tripId },
       include: { payers: { include: { user: { select: camposPublicosDelUsuario } } }, category: true },
       orderBy: [{ expenseDate: "desc" }, { createdAt: "asc" }],
     }),
-    prisma.task.findMany({
+    prisma.tarea.findMany({
       where: { tripId, status: "PENDING" },
       include: { assignedTo: { select: camposPublicosDelUsuario } },
       orderBy: { dueDate: "asc" },
     }),
     calcularSaldos(tripId),
-    prisma.taskCompletion.findMany({
+    prisma.tareaCompletada.findMany({
       where: { task: { tripId }, durationSeconds: { not: null } },
       include: { completedBy: { select: camposPublicosDelUsuario } },
     }),
     // Pagos que otros integrantes ya le hicieron a este usuario para saldar deuda.
-    prisma.payment.aggregate({
+    prisma.pago.aggregate({
       where: { tripId, toUserId: req.userId },
       _sum: { amount: true },
     }),
@@ -177,7 +177,7 @@ export async function actualizarProyecto(req: PedidoAutenticado, res: Response) 
 
   // Las fechas vienen sueltas: hay que validar contra las que el viaje ya
   // tiene, no solo entre sí, porque se puede editar una sola de las dos.
-  const actual = await prisma.trip.findUnique({ where: { id: tripId }, select: { startDate: true, endDate: true } });
+  const actual = await prisma.proyecto.findUnique({ where: { id: tripId }, select: { startDate: true, endDate: true } });
   if (!actual) return res.status(404).json({ error: "Viaje no encontrado" });
   const inicio = parsed.data.startDate ?? actual.startDate;
   const fin = parsed.data.endDate ?? actual.endDate;
@@ -185,7 +185,7 @@ export async function actualizarProyecto(req: PedidoAutenticado, res: Response) 
     return res.status(400).json({ error: "La fecha de fin no puede ser anterior a la de inicio" });
   }
 
-  const trip = await prisma.trip.update({
+  const trip = await prisma.proyecto.update({
     where: { id: tripId },
     data: parsed.data,
     include: {
@@ -215,7 +215,7 @@ export async function eliminarProyecto(req: PedidoAutenticado, res: Response) {
     });
   }
 
-  await prisma.trip.delete({ where: { id: tripId } });
+  await prisma.proyecto.delete({ where: { id: tripId } });
   res.status(204).send();
 }
 
@@ -229,7 +229,7 @@ export async function invitarParticipante(req: PedidoAutenticado, res: Response)
 
   const token = crypto.randomBytes(24).toString("hex");
   const [invitation, trip, inviter] = await Promise.all([
-    prisma.invitation.create({
+    prisma.invitacion.create({
       data: {
         tripId: req.params.tripId,
         email: parsed.data.email,
@@ -238,8 +238,8 @@ export async function invitarParticipante(req: PedidoAutenticado, res: Response)
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     }),
-    prisma.trip.findUnique({ where: { id: req.params.tripId }, select: { name: true } }),
-    prisma.user.findUnique({ where: { id: req.userId! }, select: { name: true, nickname: true } }),
+    prisma.proyecto.findUnique({ where: { id: req.params.tripId }, select: { name: true } }),
+    prisma.usuario.findUnique({ where: { id: req.userId! }, select: { name: true, nickname: true } }),
   ]);
 
   const webUrl = process.env.WEB_URL ?? "http://localhost:5173";
@@ -262,7 +262,7 @@ export async function invitarParticipante(req: PedidoAutenticado, res: Response)
 
 export async function aceptarInvitacion(req: PedidoAutenticado, res: Response) {
   const { token } = req.params;
-  const invitation = await prisma.invitation.findUnique({ where: { token } });
+  const invitation = await prisma.invitacion.findUnique({ where: { token } });
 
   if (!invitation || invitation.status !== "PENDING" || invitation.expiresAt < new Date()) {
     return res.status(400).json({ error: "Invitación inválida o expirada" });
@@ -270,12 +270,12 @@ export async function aceptarInvitacion(req: PedidoAutenticado, res: Response) {
 
   try {
     await prisma.$transaction([
-      prisma.tripMember.upsert({
+      prisma.participante.upsert({
         where: { tripId_userId: { tripId: invitation.tripId, userId: req.userId! } },
         update: {},
         create: { tripId: invitation.tripId, userId: req.userId! },
       }),
-      prisma.invitation.update({ where: { id: invitation.id }, data: { status: "ACCEPTED" } }),
+      prisma.invitacion.update({ where: { id: invitation.id }, data: { status: "ACCEPTED" } }),
     ]);
   } catch (err: any) {
     // Aceptar la misma invitación dos veces casi al mismo tiempo (doble tap,

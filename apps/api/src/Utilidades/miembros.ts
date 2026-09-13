@@ -11,7 +11,7 @@ export async function idsQueNoSonMiembros(tripId: string, userIds: (string | nul
   const unicos = [...new Set(userIds.filter((id): id is string => !!id))];
   if (unicos.length === 0) return [];
 
-  const miembros = await prisma.tripMember.findMany({
+  const miembros = await prisma.participante.findMany({
     where: { tripId, userId: { in: unicos } },
     select: { userId: true },
   });

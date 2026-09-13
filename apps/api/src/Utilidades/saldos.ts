@@ -16,17 +16,17 @@ export interface SaldoDeParticipante {
  * tiempo real de la tabla expenses/expense_splits, que es la fuente de verdad.
  */
 export async function calcularSaldos(tripId: string): Promise<SaldoDeParticipante[]> {
-  const members = await prisma.tripMember.findMany({
+  const members = await prisma.participante.findMany({
     where: { tripId },
     include: { user: true },
   });
 
-  const expenses = await prisma.expense.findMany({
+  const expenses = await prisma.gasto.findMany({
     where: { tripId },
     include: { splits: true, payers: true },
   });
 
-  const payments = await prisma.payment.findMany({ where: { tripId } });
+  const payments = await prisma.pago.findMany({ where: { tripId } });
 
   const balances = new Map<string, SaldoDeParticipante>();
   for (const m of members) {
