@@ -4,7 +4,7 @@ Guía de la arquitectura del proyecto: qué es cada carpeta/archivo, para qué s
 
 ## 1. El proyecto
 
-**La Vaquita** es una app para grupos (viajes, convivencia, proyectos) que permite:
+**La Vaquita** es una app para grupos (viajes, convivencia, estudio) que permite:
 
 - Cargar y dividir **gastos** entre los integrantes (con reparto de quién pagó y entre quiénes se divide).
 - Escanear un **comprobante/ticket** con la cámara y que la app lea automáticamente el monto, la fecha y los ítems (OCR).
@@ -64,15 +64,15 @@ Las **tablas de la base de datos** (los modelos de datos en sí) están definida
 |---|---|
 | `User` | Una persona con cuenta en la app (nombre, email, contraseña encriptada, apodo, color de avatar). |
 | `PasswordResetToken` | El link temporal que se manda por email para "olvidé mi contraseña" (vence en 1 hora). |
-| `Trip` | Un proyecto/viaje (nombre, fechas, moneda). Es el contenedor de todo lo demás. |
-| `TripMember` | Tabla puente: qué usuarios pertenecen a qué viaje, y con qué rol (`ORGANIZER` o `MEMBER`). |
-| `Invitation` | Una invitación pendiente a un viaje (link con token, con o sin email asociado). |
-| `Category` | Una categoría de gasto dentro de un viaje (ej. "Alimentación"), con color e ícono. Se puede crear, renombrar y borrar (si no tiene gastos). |
+| `Trip` | Un proyecto (nombre, fechas, moneda). Es el contenedor de todo lo demás. |
+| `TripMember` | Tabla puente: qué usuarios pertenecen a qué proyecto, y con qué rol (`ORGANIZER` o `MEMBER`). |
+| `Invitation` | Una invitación pendiente a un proyecto (link con token, con o sin email asociado). |
+| `Category` | Una categoría de gasto dentro de un proyecto (ej. "Alimentación"), con color e ícono. Se puede crear, renombrar y borrar (si no tiene gastos). |
 | `Expense` | Un gasto: descripción, monto, categoría, fecha, si vino de OCR o carga manual. |
 | `ExpensePayer` | **Quién puso la plata** de un gasto, y cuánto puso cada uno (permite que más de una persona haya pagado, ej. una cena donde uno puso más y otro contribuyó). La suma de todos los `ExpensePayer` de un gasto siempre debe dar el monto total. |
 | `ExpenseSplit` | **Entre quiénes se divide** un gasto, y cuánto le toca a cada uno. Es independiente de quién pagó: alguien puede pagar todo y que se divida entre varios. |
 | `Payment` | Un pago registrado entre dos integrantes para saldar deuda (ej. "Juan le pagó $500 a María"), por fuera de los gastos. |
-| `Task` | Una tarea del viaje: título, a quién está asignada (o si es rotativa), si usa cronómetro o fechas manuales. |
+| `Task` | Una tarea del proyecto: título, a quién está asignada (o si es rotativa), si usa cronómetro o fechas manuales. |
 | `RotationGroup` | El orden de turnos de una tarea rotativa (una lista ordenada de usuarios y un cursor que indica a quién le toca ahora). |
 | `TaskCompletion` | El registro histórico de cada vez que se completó una tarea (quién, cuándo, cuánto tardó si tenía cronómetro). |
 
@@ -85,7 +85,7 @@ Cada archivo agrupa las acciones sobre un mismo tema. Reciben el pedido, validan
 | Archivo | Nombre | Qué hace |
 |---|---|---|
 | `ControladorCuentas.ts` | Controlador de Cuenta | Registro, login, ver/editar mi perfil, "olvidé mi contraseña" y "restablecer contraseña". |
-| `ControladorProyectos.ts` | Controlador de Viajes | Crear/editar/borrar un viaje, listar mis viajes, invitar participantes, aceptar una invitación, y armar el **resumen del dashboard** (saldo, últimos gastos, gráfico por categoría, tareas pendientes). |
+| `ControladorProyectos.ts` | Controlador de Viajes | Crear, editar y borrar un proyecto, listar mis proyectos, invitar participantes, aceptar una invitación, y armar el **resumen del dashboard** (saldo, últimos gastos, gráfico por categoría, tareas pendientes). |
 | `ControladorCategorias.ts` | Controlador de Categorías | Crear, renombrar y borrar categorías de gasto (no deja borrar una que ya tiene gastos cargados). |
 | `ControladorGastos.ts` | Controlador de Gastos | Listar/crear/editar/borrar gastos, y **escanear un comprobante** (recibe la foto, la pasa por OCR, y devuelve los datos leídos para que el usuario los confirme). |
 | `ControladorTareas.ts` | Controlador de Tareas | Listar/crear/editar/borrar tareas, marcarlas como completadas (calculando el tiempo si usan cronómetro), y rotar el turno si son rotativas. |
@@ -98,7 +98,7 @@ El "mapa" que conecta cada URL con la función del controlador que la atiende.
 | Archivo | Qué agrupa |
 |---|---|
 | `rutasDeCuentas.ts` | Todo lo que empieza con `/api/auth/...` (registro, login, perfil, recuperar contraseña). |
-| `rutasDeProyectos.ts` | Todo lo que empieza con `/api/trips/...` (viajes, gastos, tareas, pagos, categorías, invitaciones). Casi todo pasa primero por `requireAuth` (¿estás logueado?) y `requireTripMember` (¿sos parte de este viaje?). |
+| `rutasDeProyectos.ts` | Todo lo que empieza con `/api/trips/...` (proyectos, gastos, tareas, pagos, categorías, invitaciones). Casi todo pasa primero por `requireAuth` (¿estás logueado?) y `requireTripMember` (¿sos parte de este proyecto?). |
 
 ### 2.4 Intermediarios
 
@@ -107,7 +107,7 @@ Funciones que corren **antes** que el controlador, y pueden cortar el pedido si 
 | Archivo | Qué chequea |
 |---|---|
 | `exigirSesion.ts` | Que el pedido traiga un token válido (`Authorization: Bearer ...`). Si no, responde 401 antes de llegar al controlador. |
-| `exigirMiembro.ts` | Que el usuario logueado sea efectivamente miembro del viaje que está pidiendo. Evita que alguien vea/edite un viaje ajeno. |
+| `exigirMiembro.ts` | Que el usuario logueado sea efectivamente miembro del proyecto que está pidiendo. Evita que alguien vea/edite un proyecto ajeno. |
 
 ### 2.5 Utilidades
 
@@ -120,8 +120,8 @@ Cálculos que varios controladores necesitan, separados para no repetir código 
 | `pagadores.ts` | Valida que la suma de "quién pagó cuánto" coincida con el total del gasto. |
 | `lectorDeComprobantes.ts` | Las heurísticas que leen el texto crudo que devuelve el OCR y extraen el monto, la fecha, el comercio, y cada ítem del ticket. Explicado en detalle en la sección 6. |
 | `turnos.ts` | La lógica de turnos rotativos: a quién le toca después, y cuánto duró una tarea con cronómetro. |
-| `miembros.ts` | Chequea que los usuarios que llegan en un pedido (pagadores, asignados, entre quiénes se divide) sean realmente miembros del viaje. |
-| `correo.ts` | Arma y envía los emails (invitación a un viaje, recuperación de contraseña) usando Gmail. |
+| `miembros.ts` | Chequea que los usuarios que llegan en un pedido (pagadores, asignados, entre quiénes se divide) sean realmente miembros del proyecto. |
+| `correo.ts` | Arma y envía los emails (invitación a un proyecto, recuperación de contraseña) usando Gmail. |
 | `sesion.ts` | Genera y valida el token de sesión. |
 | `camposPublicos.ts` | Qué campos de `User` es seguro devolver al cliente (nunca se manda `passwordHash`). |
 
@@ -149,13 +149,13 @@ Cada archivo es una pantalla completa, asociada a una URL (definidas en `Aplicac
 | `Registro.tsx` | Registrarse | `/register` |
 | `OlvideContrasena.tsx` | Recuperar contraseña | `/forgot-password` |
 | `RestablecerContrasena.tsx` | Elegir nueva contraseña | `/reset-password/:token` |
-| `AceptarInvitacion.tsx` | Aceptar invitación a un viaje | `/invite/:token` |
+| `AceptarInvitacion.tsx` | Aceptar invitación a un proyecto | `/invite/:token` |
 | `ListaDeProyectos.tsx` | Lista de mis proyectos | `/trips` |
-| `Panel.tsx` | Panel del viaje (saldo, gráfico, últimos gastos/tareas) | `/trips/:id` |
+| `Panel.tsx` | Panel del proyecto (saldo, gráfico, últimos gastos/tareas) | `/trips/:id` |
 | `Resumen.tsx` | Resumen detallado: cada KPI se despliega para ver qué gastos lo componen | `/trips/:id/resumen` |
-| `Gastos.tsx` | Lista de gastos del viaje | `/trips/:id/gastos` |
-| `Tareas.tsx` | Lista de tareas del viaje | `/trips/:id/tareas` |
-| `Participantes.tsx` | Integrantes del viaje | `/trips/:id/participantes` |
+| `Gastos.tsx` | Lista de gastos del proyecto | `/trips/:id/gastos` |
+| `Tareas.tsx` | Lista de tareas del proyecto | `/trips/:id/tareas` |
+| `Participantes.tsx` | Integrantes del proyecto | `/trips/:id/participantes` |
 
 ### 3.2 Componentes
 
@@ -163,11 +163,11 @@ Piezas de UI que se reusan desde varias pantallas (la mayoría son modales/venta
 
 | Archivo | Qué es |
 |---|---|
-| `MarcoDelProyecto.tsx` | El "marco" de todas las pantallas de un viaje: header con el nombre, botón invitar, y navegación: engloba a `Dashboard`, `Expenses`, `Tasks`, `Participants`. |
+| `MarcoDelProyecto.tsx` | El "marco" de todas las pantallas de un proyecto: header con el nombre, botón invitar, y navegación: engloba a `Dashboard`, `Expenses`, `Tasks`, `Participants`. |
 | `BarraLateral.tsx` | La barra lateral de navegación (proyectos, cerrar sesión, modo oscuro). |
 | `ModalNuevoGasto.tsx` | Ventana para crear/editar un gasto: incluye la carga manual, el escaneo de comprobante con OCR, y la revisión de varios ítems detectados a la vez. |
 | `ModalNuevaTarea.tsx` | Ventana para crear/editar una tarea (manual o rotativa, con fechas o cronómetro). |
-| `ModalEditarProyecto.tsx` | Ventana para editar nombre/fechas del viaje, **administrar categorías** (crear, renombrar, borrar), y eliminar el viaje. |
+| `ModalEditarProyecto.tsx` | Ventana para editar nombre/fechas del proyecto, **administrar categorías** (crear, renombrar, borrar), y eliminar el proyecto. |
 | `ModalInvitar.tsx` | Ventana para invitar participantes (genera el link, compartir por WhatsApp, o mandar por email). |
 | `ModalEditarPerfil.tsx` | Ventana para editar mi apodo y color de avatar. |
 | `ModalCompletarTarea.tsx` | Ventana que aparece al marcar como hecha una tarea con cronómetro, para ajustar el tiempo si hace falta. |
@@ -218,18 +218,18 @@ apps/mobile/src/
 | `PantallaOlvideContrasena.tsx` | Recuperar contraseña |
 | `PantallaListaDeProyectos.tsx` | Lista de mis proyectos |
 | `PantallaNuevoProyecto.tsx` | Crear un proyecto nuevo |
-| `PantallaPanel.tsx` | Panel del viaje (equivalente al Dashboard web) |
+| `PantallaPanel.tsx` | Panel del proyecto (equivalente al Dashboard web) |
 | `PantallaResumen.tsx` | Resumen detallado, con los mismos KPI desplegables que la web |
 | `PantallaGastos.tsx` | Lista de gastos |
 | `PantallaNuevoGasto.tsx` | Crear/editar un gasto (manual, OCR, categorías, pagadores múltiples) |
 | `PantallaTareas.tsx` | Lista de tareas |
 | `PantallaNuevaTarea.tsx` | Crear/editar una tarea |
-| `PantallaParticipantes.tsx` | Integrantes del viaje |
+| `PantallaParticipantes.tsx` | Integrantes del proyecto |
 | `PantallaInvitar.tsx` | Invitar participantes |
 | `PantallaDetalleDeSaldo.tsx` | Detalle de cómo se compone mi saldo |
-| `PantallaEditarProyecto.tsx` | Editar el viaje y **administrar categorías** |
+| `PantallaEditarProyecto.tsx` | Editar el proyecto y **administrar categorías** |
 | `PantallaEditarPerfil.tsx` | Editar mi perfil |
-| `PantallaAjustes.tsx` | Ajustes: mi perfil, modo oscuro, volver a proyectos, eliminar viaje |
+| `PantallaAjustes.tsx` | Ajustes: mi perfil, modo oscuro, volver a proyectos, eliminar el proyecto |
 
 ### 4.2 Componentes
 
@@ -246,7 +246,7 @@ apps/mobile/src/
 |---|---|
 | `ContextoDeSesion.tsx` | Usuario logueado y token (persistido con `AsyncStorage`). |
 | `ContextoDeTema.tsx` | Modo claro/oscuro. |
-| `ContextoDeProyecto.tsx` | **Cuál es el viaje actualmente abierto**: no existe en la web porque ahí el viaje activo se identifica por la URL (`/trips/:id`); en mobile no hay URL, así que se guarda acá. |
+| `ContextoDeProyecto.tsx` | **Cuál es el proyecto actualmente abierto**: no existe en la web porque ahí el proyecto activo se identifica por la URL (`/trips/:id`); en mobile no hay URL, así que se guarda acá. |
 
 ### 4.4 Utilidades
 
@@ -267,7 +267,7 @@ Para ver las piezas trabajando juntas, así es el camino de **"crear un gasto"**
 1. El usuario completa el formulario en `PantallaNuevoGasto.tsx` (carpeta `Vista/` de mobile) y toca "Guardar".
 2. Esa pantalla llama a `api.createExpense(tripId, datos)`, definida en `apps/mobile/src/Utilidades/api.ts`.
 3. Esa función hace un `POST` HTTP a `/api/trips/:tripId/expenses`.
-4. En el servidor, `Rutas/rutasDeProyectos.ts` recibe esa URL y primero pasa por los intermediarios `requireAuth` (¿hay sesión?) y `requireTripMember` (¿es parte de este viaje?).
+4. En el servidor, `Rutas/rutasDeProyectos.ts` recibe esa URL y primero pasa por los intermediarios `requireAuth` (¿hay sesión?) y `requireTripMember` (¿es parte de este proyecto?).
 5. Si pasa, llama a `createExpense` en `Controlador/ControladorGastos.ts`, que valida los datos con `zod`, usa `buildEqualSplits` (de `Utilidades/divisiones.ts`) para dividir el monto, valida los pagadores con `validatePayersSum` (de `Utilidades/pagadores.ts`), y guarda todo en la base a través del cliente de `Modelo/baseDeDatos.ts` (tablas `Expense` + `ExpensePayer` + `ExpenseSplit`, definidas en `prisma/schema.prisma`).
 6. La respuesta vuelve al celular, que navega hacia atrás y refresca la lista.
 7. La próxima vez que alguien mira el Dashboard, `getTripSummary` (en `Controlador/ControladorProyectos.ts`) usa `computeTripBalances` (en `Utilidades/saldos.ts`) para recalcular el saldo de todos, leyendo ese gasto recién creado.
@@ -328,7 +328,7 @@ Cosas que el proyecto **no** resuelve hoy, anotadas a propósito para no dar por
 |---|---|
 | Fotos de comprobantes | Se guardan en `apps/api/uploads/` y se sirven por URL sin pedir sesión. El nombre del archivo es aleatorio (no se puede adivinar), pero quien tenga el link ve la foto. |
 | Intentos de login | No hay límite de intentos ni demora entre uno y otro, así que no hay defensa contra prueba y error de contraseñas. |
-| Roles | Solo el organizador puede eliminar el viaje. El resto de las acciones (invitar, editar el viaje, administrar categorías) las puede hacer cualquier integrante. |
+| Roles | Solo el organizador puede eliminar el proyecto. El resto de las acciones (invitar, editar el proyecto, administrar categorías) las puede hacer cualquier integrante. |
 | Tests automáticos | Cubren los cálculos del backend (saldos, divisiones, pagadores, turnos, lectura de tickets). Las pantallas de web y mobile se prueban a mano. |
 | Publicación | El proyecto corre local. Para probarlo desde otro dispositivo se usan túneles temporales, que vencen a las pocas horas y obligan a actualizar las URLs de los `.env`. |
-| Moneda | El monto se guarda sin conversión: un viaje mezcla monedas si se cargan gastos en distintas. |
+| Moneda | El monto se guarda sin conversión: un proyecto mezcla monedas si se cargan gastos en distintas. |

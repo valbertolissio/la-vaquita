@@ -1,6 +1,6 @@
 # La Vaquita
 
-App para gestionar de forma colaborativa los gastos y las tareas de un proyecto grupal: cada gasto se puede dividir entre los participantes que corresponda, el sistema calcula automáticamente cuánto le debe cada uno a cada uno, y las tareas del viaje (cocinar, lavar los platos, limpiar...) se pueden asignar de forma manual o por turnos rotativos.
+App para gestionar de forma colaborativa los gastos y las tareas de un proyecto grupal: cada gasto se puede dividir entre los participantes que corresponda, el sistema calcula automáticamente cuánto le debe cada uno a cada uno, y las tareas del proyecto (cocinar, lavar los platos, limpiar...) se pueden asignar de forma manual o por turnos rotativos.
 
 ## Estructura
 
@@ -21,12 +21,12 @@ Las tres apps consumen la **misma API REST**, así que la lógica de negocio (c�
 Definido en [`apps/api/prisma/schema.prisma`](apps/api/prisma/schema.prisma). Tablas principales:
 
 - **users**: cuentas de usuario
-- **trips**: viajes, con fecha de inicio/fin y moneda
-- **trip_members**: tabla puente usuario/viaje (rol: organizador o integrante)
+- **trips**: proyectos, con fecha de inicio/fin y moneda
+- **trip_members**: tabla puente usuario/proyecto (rol: organizador o integrante)
 - **invitations**: invitaciones pendientes por email
-- **categories**: categorías de gasto por viaje (Alimentación, Transporte, etc.)
+- **categories**: categorías de gasto por proyecto (Alimentación, Transporte, etc.)
 - **expenses** + **expense_splits**: cada gasto y entre quiénes se divide (el saldo de cada persona se **calcula** a partir de estas dos tablas, no se guarda duplicado)
-- **tasks** + **rotation_groups** + **task_completions**: tareas del viaje, con asignación manual o rotativa (al completarse una tarea rotativa, el turno pasa automáticamente al siguiente integrante)
+- **tasks** + **rotation_groups** + **task_completions**: tareas del proyecto, con asignación manual o rotativa (al completarse una tarea rotativa, el turno pasa automáticamente al siguiente integrante)
 
 ## Requisitos
 
@@ -66,7 +66,7 @@ npm run db:migrate
 npm run --workspace=apps/api prisma:seed
 ```
 
-El seed crea un viaje "Bariloche 2025" con 6 integrantes y gastos/tareas de ejemplo, igual al de la maqueta. Todos los usuarios de prueba usan la contraseña `vaquita123` (ej. `valentina@lavaquita.app`).
+El seed crea un proyecto "Bariloche 2025" con 6 integrantes y gastos/tareas de ejemplo, igual al de la maqueta. Todos los usuarios de prueba usan la contraseña `vaquita123` (ej. `valentina@lavaquita.app`).
 
 ### 3. Levantar el backend
 
