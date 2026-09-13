@@ -1,9 +1,10 @@
 import { Response } from "express";
 import { z } from "zod";
-import { prisma } from "../lib/prisma";
-import { safeUserSelect } from "../lib/selects";
-import { computeDurationSeconds, nextRotationCursor } from "../lib/rotation";
-import { AuthedRequest } from "../middleware/auth";
+import { prisma } from "../Modelo/prisma";
+import { safeUserSelect } from "../Utilidades/selects";
+import { computeDurationSeconds, nextRotationCursor } from "../Utilidades/rotation";
+import { idsQueNoSonMiembros } from "../Utilidades/miembros";
+import { AuthedRequest } from "../Intermediarios/auth";
 
 const createTaskSchema = z.object({
   title: z.string().min(1),
@@ -52,6 +53,15 @@ export async function createTask(req: AuthedRequest, res: Response) {
   const { rotationMembers, rotationName, assignmentType, ...data } = parsed.data;
   const tripId = req.params.tripId;
 
+  const ajenos = await idsQueNoSonMiembros(tripId, [data.assignedToId, ...(rotationMembers ?? [])]);
+  if (ajenos.length > 0) {
+    return res.status(400).json({ error: "Hay personas asignadas que no son integrantes del proyecto" });
+  }
+
+  if (data.startDate && data.dueDate && data.dueDate < data.startDate) {
+    return res.status(400).json({ error: "La fecha de fin no puede ser anterior a la de inicio" });
+  }
+
   if (data.timeTracked && !data.startDate) {
     data.startDate = new Date();
   }
@@ -85,7 +95,12 @@ export async function createTask(req: AuthedRequest, res: Response) {
 }
 
 export async function updateTask(req: AuthedRequest, res: Response) {
-  const task = await prisma.task.findUnique({ where: { id: req.params.taskId }, include: { rotationGroup: true } });
+  // Filtrar también por tripId: ser miembro del viaje de la URL no puede
+  // habilitar a tocar una tarea que pertenece a otro viaje.
+  const task = await prisma.task.findFirst({
+    where: { id: req.params.taskId, tripId: req.params.tripId },
+    include: { rotationGroup: true },
+  });
   if (!task) return res.status(404).json({ error: "Tarea no encontrada" });
 
   const parsed = updateTaskSchema.safeParse(req.body);
@@ -94,12 +109,22 @@ export async function updateTask(req: AuthedRequest, res: Response) {
   }
   const { rotationMembers, ...data } = parsed.data;
 
+  const ajenos = await idsQueNoSonMiembros(req.params.tripId, [data.assignedToId, ...(rotationMembers ?? [])]);
+  if (ajenos.length > 0) {
+    return res.status(400).json({ error: "Hay personas asignadas que no son integrantes del proyecto" });
+  }
+
   // Si se activa el cronómetro y no queda ninguna fecha de inicio (ni la nueva
   // ni la que ya tenía la tarea), arranca a contar desde ahora.
   const effectiveTimeTracked = data.timeTracked ?? task.timeTracked;
   const effectiveStartDate = data.startDate !== undefined ? data.startDate : task.startDate;
   if (effectiveTimeTracked && !effectiveStartDate) {
     data.startDate = new Date();
+  }
+
+  const effectiveDueDate = data.dueDate !== undefined ? data.dueDate : task.dueDate;
+  if (effectiveStartDate && effectiveDueDate && effectiveDueDate < effectiveStartDate) {
+    return res.status(400).json({ error: "La fecha de fin no puede ser anterior a la de inicio" });
   }
 
   if (task.assignmentType === "ROTATING" && task.rotationGroupId && rotationMembers && rotationMembers.length >= 2) {
@@ -128,8 +153,8 @@ export async function updateTask(req: AuthedRequest, res: Response) {
  * siempre hay a quién le toca a continuación).
  */
 export async function completeTask(req: AuthedRequest, res: Response) {
-  const task = await prisma.task.findUnique({
-    where: { id: req.params.taskId },
+  const task = await prisma.task.findFirst({
+    where: { id: req.params.taskId, tripId: req.params.tripId },
     include: { rotationGroup: true },
   });
   if (!task) return res.status(404).json({ error: "Tarea no encontrada" });
@@ -161,7 +186,12 @@ export async function completeTask(req: AuthedRequest, res: Response) {
       data: {
         status: "PENDING",
         assignedToId: order[nextCursor],
-        startDate: task.timeTracked ? now : task.startDate,
+        // El reloj del turno arranca de cero para quien recibe la posta, use
+        // cronómetro o fechas manuales. Antes, en una tarea con fechas
+        // manuales la fecha de inicio no se tocaba nunca, así que cada turno
+        // se medía desde que se creó la tarea y el tiempo dedicado crecía
+        // turno a turno sin tener nada que ver con lo que realmente llevó.
+        startDate: now,
       },
     });
     rotated = true;
@@ -186,7 +216,7 @@ export async function completeTask(req: AuthedRequest, res: Response) {
  * alguien.
  */
 export async function uncompleteTask(req: AuthedRequest, res: Response) {
-  const task = await prisma.task.findUnique({ where: { id: req.params.taskId } });
+  const task = await prisma.task.findFirst({ where: { id: req.params.taskId, tripId: req.params.tripId } });
   if (!task) return res.status(404).json({ error: "Tarea no encontrada" });
   if (task.status !== "DONE") {
     return res.status(400).json({ error: "La tarea no está marcada como hecha" });
@@ -210,6 +240,12 @@ export async function uncompleteTask(req: AuthedRequest, res: Response) {
 }
 
 export async function deleteTask(req: AuthedRequest, res: Response) {
-  await prisma.task.delete({ where: { id: req.params.taskId } });
+  const task = await prisma.task.findFirst({
+    where: { id: req.params.taskId, tripId: req.params.tripId },
+    select: { id: true },
+  });
+  if (!task) return res.status(404).json({ error: "Tarea no encontrada" });
+
+  await prisma.task.delete({ where: { id: task.id } });
   res.status(204).send();
 }

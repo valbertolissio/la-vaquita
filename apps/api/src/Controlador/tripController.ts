@@ -1,11 +1,11 @@
 import { Response } from "express";
 import crypto from "crypto";
 import { z } from "zod";
-import { prisma } from "../lib/prisma";
-import { safeUserSelect } from "../lib/selects";
-import { AuthedRequest } from "../middleware/auth";
-import { computeTripBalances, simplifyDebts } from "../lib/balances";
-import { sendInvitationEmail } from "../lib/mailer";
+import { prisma } from "../Modelo/prisma";
+import { safeUserSelect } from "../Utilidades/selects";
+import { AuthedRequest } from "../Intermediarios/auth";
+import { computeTripBalances, simplifyDebts } from "../Utilidades/balances";
+import { sendInvitationEmail } from "../Utilidades/mailer";
 
 const DEFAULT_CATEGORIES = [
   { name: "Alimentación", icon: "utensils", color: "#22a559" },
@@ -22,6 +22,9 @@ const createTripSchema = z.object({
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
   currency: z.string().default("ARS"),
+}).refine((d) => d.endDate >= d.startDate, {
+  message: "La fecha de fin no puede ser anterior a la de inicio",
+  path: ["endDate"],
 });
 
 const updateTripSchema = z.object({
@@ -83,11 +86,11 @@ export async function getTrip(req: AuthedRequest, res: Response) {
 export async function getTripSummary(req: AuthedRequest, res: Response) {
   const tripId = req.params.tripId;
 
-  const [expenses, pendingTasks, balances, timeCompletions] = await Promise.all([
+  const [expenses, pendingTasks, balances, timeCompletions, paidToMeAgg] = await Promise.all([
     prisma.expense.findMany({
       where: { tripId },
-      include: { paidBy: { select: safeUserSelect }, category: true },
-      orderBy: { expenseDate: "desc" },
+      include: { payers: { include: { user: { select: safeUserSelect } } }, category: true },
+      orderBy: [{ expenseDate: "desc" }, { createdAt: "asc" }],
     }),
     prisma.task.findMany({
       where: { tripId, status: "PENDING" },
@@ -98,6 +101,11 @@ export async function getTripSummary(req: AuthedRequest, res: Response) {
     prisma.taskCompletion.findMany({
       where: { task: { tripId }, durationSeconds: { not: null } },
       include: { completedBy: { select: safeUserSelect } },
+    }),
+    // Pagos que otros integrantes ya le hicieron a este usuario para saldar deuda.
+    prisma.payment.aggregate({
+      where: { tripId, toUserId: req.userId },
+      _sum: { amount: true },
     }),
   ]);
 
@@ -120,6 +128,12 @@ export async function getTripSummary(req: AuthedRequest, res: Response) {
   const myBalance = balances.find((b) => b.userId === req.userId)?.balance ?? 0;
   const pendingTotal = balances.filter((b) => b.balance < 0).reduce((s, b) => s + Math.abs(b.balance), 0);
 
+  // Cuánto puso el usuario en gastos vs. cuánto pusieron los demás, y cuánto
+  // le pagaron ya (por fuera de los gastos) para saldar su deuda.
+  const myContribution = balances.find((b) => b.userId === req.userId)?.paid ?? 0;
+  const othersContribution = balances.filter((b) => b.userId !== req.userId).reduce((s, b) => s + b.paid, 0);
+  const paidToMe = Number(paidToMeAgg._sum.amount ?? 0);
+
   const byCategory = new Map<string, { name: string; color: string | null; total: number }>();
   for (const e of expenses) {
     const key = e.category?.id ?? "sin-categoria";
@@ -136,6 +150,9 @@ export async function getTripSummary(req: AuthedRequest, res: Response) {
     totalExpense: Math.round(totalExpense * 100) / 100,
     expenseCount: expenses.length,
     myBalance,
+    myContribution: Math.round(myContribution * 100) / 100,
+    othersContribution: Math.round(othersContribution * 100) / 100,
+    paidToMe: Math.round(paidToMe * 100) / 100,
     pendingTotal: Math.round(pendingTotal * 100) / 100,
     pendingTaskCount: pendingTasks.length,
     balances,
@@ -158,6 +175,16 @@ export async function updateTrip(req: AuthedRequest, res: Response) {
     return res.status(400).json({ error: parsed.error.issues[0].message });
   }
 
+  // Las fechas vienen sueltas: hay que validar contra las que el viaje ya
+  // tiene, no solo entre sí, porque se puede editar una sola de las dos.
+  const actual = await prisma.trip.findUnique({ where: { id: tripId }, select: { startDate: true, endDate: true } });
+  if (!actual) return res.status(404).json({ error: "Viaje no encontrado" });
+  const inicio = parsed.data.startDate ?? actual.startDate;
+  const fin = parsed.data.endDate ?? actual.endDate;
+  if (fin < inicio) {
+    return res.status(400).json({ error: "La fecha de fin no puede ser anterior a la de inicio" });
+  }
+
   const trip = await prisma.trip.update({
     where: { id: tripId },
     data: parsed.data,
@@ -174,6 +201,18 @@ export async function deleteTrip(req: AuthedRequest, res: Response) {
   const tripId = req.params.tripId;
   if (!(await isOrganizer(tripId, req.userId!))) {
     return res.status(403).json({ error: "Solo el organizador puede eliminar el viaje" });
+  }
+
+  // Borrar el viaje borra en cascada gastos, divisiones y pagos: si alguien
+  // todavía debe o le deben plata, esa deuda desaparecería sin dejar rastro.
+  // Por eso primero tienen que estar todas las cuentas saldadas.
+  const balances = await computeTripBalances(tripId);
+  const unsettled = balances.filter((b) => Math.abs(b.balance) > 0.01);
+  if (unsettled.length > 0) {
+    const names = unsettled.map((b) => b.name).join(", ");
+    return res.status(409).json({
+      error: `No se puede eliminar el proyecto con cuentas sin saldar (${names}). Salden las deudas pendientes primero.`,
+    });
   }
 
   await prisma.trip.delete({ where: { id: tripId } });
@@ -229,14 +268,22 @@ export async function acceptInvitation(req: AuthedRequest, res: Response) {
     return res.status(400).json({ error: "Invitación inválida o expirada" });
   }
 
-  await prisma.$transaction([
-    prisma.tripMember.upsert({
-      where: { tripId_userId: { tripId: invitation.tripId, userId: req.userId! } },
-      update: {},
-      create: { tripId: invitation.tripId, userId: req.userId! },
-    }),
-    prisma.invitation.update({ where: { id: invitation.id }, data: { status: "ACCEPTED" } }),
-  ]);
+  try {
+    await prisma.$transaction([
+      prisma.tripMember.upsert({
+        where: { tripId_userId: { tripId: invitation.tripId, userId: req.userId! } },
+        update: {},
+        create: { tripId: invitation.tripId, userId: req.userId! },
+      }),
+      prisma.invitation.update({ where: { id: invitation.id }, data: { status: "ACCEPTED" } }),
+    ]);
+  } catch (err: any) {
+    // Aceptar la misma invitación dos veces casi al mismo tiempo (doble tap,
+    // dos pestañas) puede hacer que el upsert choque contra la restricción
+    // única en vez de resolver como update. El resultado que importa (ser
+    // miembro del viaje) ya está logrado, así que no es un error real.
+    if (err.code !== "P2002") throw err;
+  }
 
   res.json({ tripId: invitation.tripId });
 }

@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { z } from "zod";
-import { prisma } from "../lib/prisma";
-import { signToken } from "../lib/jwt";
+import { prisma } from "../Modelo/prisma";
+import { signToken } from "../Utilidades/jwt";
+import { sendPasswordResetEmail } from "../Utilidades/mailer";
 
 const registerSchema = z.object({
   name: z.string().min(2, "El nombre es muy corto"),
@@ -21,6 +23,15 @@ const updateMeSchema = z.object({
   name: z.string().min(2, "El nombre es muy corto").optional(),
   nickname: z.string().max(30).nullable().optional(),
   avatarColor: z.enum(AVATAR_COLOR_KEYS).nullable().optional(),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Email inválido"),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
 });
 
 export async function register(req: Request, res: Response) {
@@ -105,4 +116,59 @@ export async function updateMe(req: Request & { userId?: string }, res: Response
     select: { id: true, name: true, email: true, avatarUrl: true, nickname: true, avatarColor: true },
   });
   res.json(user);
+}
+
+// Mensaje genérico e idéntico exista o no la cuenta, para no revelar qué emails están registrados.
+const FORGOT_PASSWORD_MESSAGE = "Si existe una cuenta con ese email, te mandamos un link para restablecer la contraseña.";
+
+export async function forgotPassword(req: Request, res: Response) {
+  const parsed = forgotPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
+  }
+
+  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  if (user) {
+    const token = crypto.randomBytes(24).toString("hex");
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+
+    const webUrl = process.env.WEB_URL ?? "http://localhost:5173";
+    const emailSent = await sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      link: `${webUrl}/reset-password/${token}`,
+    });
+    if (!emailSent) {
+      console.warn(`[forgotPassword] no se pudo mandar el email a ${user.email}`);
+    }
+  }
+
+  res.json({ message: FORGOT_PASSWORD_MESSAGE });
+}
+
+export async function resetPassword(req: Request, res: Response) {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
+  }
+  const { token, password } = parsed.data;
+
+  const resetToken = await prisma.passwordResetToken.findUnique({ where: { token } });
+  if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
+    return res.status(400).json({ error: "El link para restablecer la contraseña es inválido o venció" });
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: resetToken.userId }, data: { passwordHash } }),
+    prisma.passwordResetToken.update({ where: { id: resetToken.id }, data: { usedAt: new Date() } }),
+  ]);
+
+  res.json({ message: "Contraseña actualizada" });
 }

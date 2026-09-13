@@ -40,4 +40,21 @@ describe("computeDurationSeconds", () => {
     const before = new Date("2026-01-01T09:59:00.000Z");
     expect(computeDurationSeconds(start, before)).toBe(0);
   });
+
+  it("ignores a scheduled date range instead of logging it as worked time", () => {
+    // "Alimentar al perro": inicio hoy, fin dentro de diez años. Eso es una
+    // fecha agendada, no diez años de trabajo.
+    const dentroDeDiezAnios = new Date("2036-01-01T10:00:00.000Z");
+    expect(computeDurationSeconds(start, dentroDeDiezAnios)).toBeNull();
+  });
+
+  it("ignores a turn that stayed pending for days", () => {
+    const tresDiasDespues = new Date("2026-01-04T10:00:00.000Z");
+    expect(computeDurationSeconds(start, tresDiasDespues)).toBeNull();
+  });
+
+  it("still measures a long but plausible stretch of work (24 h)", () => {
+    const unDiaDespues = new Date("2026-01-02T10:00:00.000Z");
+    expect(computeDurationSeconds(start, unDiaDespues)).toBe(86400);
+  });
 });

@@ -1,5 +1,5 @@
 import { NextFunction, Response } from "express";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../Modelo/prisma";
 import { AuthedRequest } from "./auth";
 
 export async function requireTripMember(req: AuthedRequest, res: Response, next: NextFunction) {

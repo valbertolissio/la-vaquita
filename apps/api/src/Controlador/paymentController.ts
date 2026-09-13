@@ -1,8 +1,9 @@
 import { Response } from "express";
 import { z } from "zod";
-import { prisma } from "../lib/prisma";
-import { safeUserSelect } from "../lib/selects";
-import { AuthedRequest } from "../middleware/auth";
+import { prisma } from "../Modelo/prisma";
+import { safeUserSelect } from "../Utilidades/selects";
+import { AuthedRequest } from "../Intermediarios/auth";
+import { idsQueNoSonMiembros } from "../Utilidades/miembros";
 
 const createPaymentSchema = z.object({
   fromUserId: z.string().uuid(),
@@ -29,6 +30,14 @@ export async function createPayment(req: AuthedRequest, res: Response) {
   if (fromUserId === toUserId) {
     return res.status(400).json({ error: "El pago tiene que ser entre dos integrantes distintos" });
   }
+  if (req.userId !== fromUserId && req.userId !== toUserId) {
+    return res.status(403).json({ error: "Solo quien paga o quien recibe puede marcar esta deuda como pagada" });
+  }
+
+  const ajenos = await idsQueNoSonMiembros(req.params.tripId, [fromUserId, toUserId]);
+  if (ajenos.length > 0) {
+    return res.status(400).json({ error: "El pago tiene que ser entre integrantes del proyecto" });
+  }
 
   const payment = await prisma.payment.create({
     data: { tripId: req.params.tripId, fromUserId, toUserId, amount, note },
@@ -39,6 +48,12 @@ export async function createPayment(req: AuthedRequest, res: Response) {
 }
 
 export async function deletePayment(req: AuthedRequest, res: Response) {
+  const payment = await prisma.payment.findFirst({ where: { id: req.params.paymentId, tripId: req.params.tripId } });
+  if (!payment) return res.status(404).json({ error: "Pago no encontrado" });
+  if (req.userId !== payment.fromUserId && req.userId !== payment.toUserId) {
+    return res.status(403).json({ error: "Solo quien pagó o quien recibió puede deshacer este pago" });
+  }
+
   await prisma.payment.delete({ where: { id: req.params.paymentId } });
   res.status(204).send();
 }

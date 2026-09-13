@@ -2,8 +2,16 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { authRoutes } from "./routes/authRoutes";
-import { tripRoutes } from "./routes/tripRoutes";
+import { authRoutes } from "./Rutas/authRoutes";
+import { tripRoutes } from "./Rutas/tripRoutes";
+
+// Salvavidas: un error async sin capturar en algún controlador (una promesa
+// rechazada que nadie esperó) tira abajo TODO el proceso en Node por default,
+// cortando la app para todos los usuarios conectados por un solo pedido que
+// falló. Loguearlo y seguir andando es mejor que un 502 general.
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason);
+});
 
 const app = express();
 

@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+import { prisma } from "../Modelo/prisma";
 
 export interface MemberBalance {
   userId: string;
@@ -23,7 +23,7 @@ export async function computeTripBalances(tripId: string): Promise<MemberBalance
 
   const expenses = await prisma.expense.findMany({
     where: { tripId },
-    include: { splits: true },
+    include: { splits: true, payers: true },
   });
 
   const payments = await prisma.payment.findMany({ where: { tripId } });
@@ -42,8 +42,10 @@ export async function computeTripBalances(tripId: string): Promise<MemberBalance
   }
 
   for (const expense of expenses) {
-    const payer = balances.get(expense.paidById);
-    if (payer) payer.paid += Number(expense.amount);
+    for (const payer of expense.payers) {
+      const p = balances.get(payer.userId);
+      if (p) p.paid += Number(payer.amount);
+    }
 
     for (const split of expense.splits) {
       const member = balances.get(split.userId);

@@ -27,7 +27,7 @@ model User {
 
   tripsCreated     Trip[]            @relation("TripCreator")
   tripMemberships  TripMember[]
-  expensesPaid     Expense[]         @relation("ExpensePayer")
+  expensePayments  ExpensePayer[]
   expensesCreated  Expense[]         @relation("ExpenseCreator")
   expenseSplits    ExpenseSplit[]
   tasksAssigned    Task[]            @relation("TaskAssignee")
@@ -36,8 +36,21 @@ model User {
   taskCompletions  TaskCompletion[]
   paymentsSent     Payment[]         @relation("PaymentSender")
   paymentsReceived Payment[]         @relation("PaymentReceiver")
+  passwordResets   PasswordResetToken[]
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+
+  @@map("password_reset_tokens")
 }
 
 // ---------------------------------------------------------------------------
@@ -146,8 +159,6 @@ model Expense {
   amount      Decimal       @db.Decimal(12, 2)
   categoryId  String?       @map("category_id")
   category    Category?     @relation(fields: [categoryId], references: [id])
-  paidById    String        @map("paid_by")
-  paidBy      User          @relation("ExpensePayer", fields: [paidById], references: [id])
   createdById String        @map("created_by")
   createdBy   User          @relation("ExpenseCreator", fields: [createdById], references: [id])
   source      ExpenseSource @default(MANUAL)
@@ -158,6 +169,7 @@ model Expense {
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
   splits ExpenseSplit[]
+  payers ExpensePayer[]
 
   @@map("expenses")
 }
@@ -173,6 +185,22 @@ model ExpenseSplit {
 
   @@unique([expenseId, userId])
   @@map("expense_splits")
+}
+
+// Quién puso plata para pagar el gasto ("¿quién pagó?") — permite que más de
+// una persona haya contribuido al pago (ej. una cena donde uno puso más y
+// otro contribuyó una parte). La suma de los montos debe ser igual al total
+// del gasto; eso se valida al crear/editar, no en la base de datos.
+model ExpensePayer {
+  id        String  @id @default(uuid())
+  expenseId String  @map("expense_id")
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  userId    String  @map("user_id")
+  user      User    @relation(fields: [userId], references: [id])
+  amount    Decimal @db.Decimal(12, 2)
+
+  @@unique([expenseId, userId])
+  @@map("expense_payers")
 }
 
 // ---------------------------------------------------------------------------
