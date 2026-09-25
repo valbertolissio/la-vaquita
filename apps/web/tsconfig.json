@@ -10,6 +10,16 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "typeRoots": ["./node_modules/@types"],
+    // La web usa React 18 y la app del celular React 19, así que en el monorepo
+    // conviven dos juegos de tipos. Sin esto, las librerías instaladas arriba
+    // (por ejemplo los íconos) tomaban los tipos de React 19 y chocaban con los
+    // de React 18 de esta app, y la compilación de producción fallaba.
+    "baseUrl": ".",
+    "paths": {
+      "react": ["./node_modules/@types/react"],
+      "react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime"],
+      "react-dom": ["./node_modules/@types/react-dom"]
+    },
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true

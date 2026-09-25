@@ -12,8 +12,7 @@ datasource db {
 
 // Usuarios
 
-
-model User {
+model Usuario {
   id           String   @id @default(uuid())
   name         String
   email        String   @unique
@@ -24,25 +23,37 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  tripsCreated     Trip[]            @relation("TripCreator")
-  tripMemberships  TripMember[]
-  expensesPaid     Expense[]         @relation("ExpensePayer")
-  expensesCreated  Expense[]         @relation("ExpenseCreator")
-  expenseSplits    ExpenseSplit[]
-  tasksAssigned    Task[]            @relation("TaskAssignee")
-  tasksCreated     Task[]            @relation("TaskCreator")
-  invitationsSent  Invitation[]      @relation("InvitationSender")
-  taskCompletions  TaskCompletion[]
-  paymentsSent     Payment[]         @relation("PaymentSender")
-  paymentsReceived Payment[]         @relation("PaymentReceiver")
+  tripsCreated     Proyecto[]            @relation("CreadorDelProyecto")
+  tripMemberships  Participante[]
+  expensePayments  PagadorDelGasto[]
+  expensesCreated  Gasto[]               @relation("CreadorDelGasto")
+  expenseSplits    DivisionDelGasto[]
+  tasksAssigned    Tarea[]               @relation("ResponsableDeTarea")
+  tasksCreated     Tarea[]               @relation("CreadorDeTarea")
+  invitationsSent  Invitacion[]          @relation("QuienInvita")
+  taskCompletions  TareaCompletada[]
+  paymentsSent     Pago[]                @relation("QuienPaga")
+  paymentsReceived Pago[]                @relation("QuienCobra")
+  passwordResets   TokenDeRecuperacion[]
 
   @@map("users")
 }
 
+model TokenDeRecuperacion {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  user      Usuario   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+
+  @@map("password_reset_tokens")
+}
+
 // Proyectos
 
-
-model Trip {
+model Proyecto {
   id          String   @id @default(uuid())
   name        String
   description String?
@@ -51,16 +62,16 @@ model Trip {
   endDate     DateTime @map("end_date")
   currency    String   @default("ARS")
   createdById String   @map("created_by")
-  createdBy   User     @relation("TripCreator", fields: [createdById], references: [id])
+  createdBy   Usuario  @relation("CreadorDelProyecto", fields: [createdById], references: [id])
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  members     TripMember[]
-  expenses    Expense[]
-  tasks       Task[]
-  invitations Invitation[]
-  categories  Category[]
-  payments    Payment[]
+  members     Participante[]
+  expenses    Gasto[]
+  tasks       Tarea[]
+  invitations Invitacion[]
+  categories  Categoria[]
+  payments    Pago[]
 
   @@map("trips")
 }
@@ -70,17 +81,17 @@ enum TripRole {
   MEMBER
 }
 
-// Participantes
-model TripMember {
+// Tabla puente: participantes de un proyecto
+model Participante {
   id       String   @id @default(uuid())
   tripId   String   @map("trip_id")
-  trip     Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  trip     Proyecto @relation(fields: [tripId], references: [id], onDelete: Cascade)
   userId   String   @map("user_id")
-  user     User     @relation(fields: [userId], references: [id])
+  user     Usuario  @relation(fields: [userId], references: [id])
   role     TripRole @default(MEMBER)
   joinedAt DateTime @default(now()) @map("joined_at")
 
-  // El saldo (a favor / en contra) se calcula a partir de Expense + ExpenseSplit,
+  // El saldo (a favor / en contra) se calcula a partir de Gasto + DivisionDelGasto,
   // no se almacena de forma redundante.
 
   @@unique([tripId, userId])
@@ -94,38 +105,36 @@ enum InvitationStatus {
   EXPIRED
 }
 
-model Invitation {
-  id         String            @id @default(uuid())
-  tripId     String            @map("trip_id")
-  trip       Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  email      String?
-  token      String            @unique
-  status     InvitationStatus  @default(PENDING)
+model Invitacion {
+  id          String           @id @default(uuid())
+  tripId      String           @map("trip_id")
+  trip        Proyecto         @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  email       String?
+  token       String           @unique
+  status      InvitationStatus @default(PENDING)
   invitedById String           @map("invited_by")
-  invitedBy  User              @relation("InvitationSender", fields: [invitedById], references: [id])
-  createdAt  DateTime          @default(now()) @map("created_at")
-  expiresAt  DateTime          @map("expires_at")
+  invitedBy   Usuario          @relation("QuienInvita", fields: [invitedById], references: [id])
+  createdAt   DateTime         @default(now()) @map("created_at")
+  expiresAt   DateTime         @map("expires_at")
 
   @@map("invitations")
 }
 
-// Categorías de gasto (por viaje, con set por defecto al crear el viaje)
+// Categorías de gasto (por proyecto, con un conjunto por defecto al crearlo)
 
-
-model Category {
-  id     String    @id @default(uuid())
-  tripId String    @map("trip_id")
-  trip   Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+model Categoria {
+  id     String   @id @default(uuid())
+  tripId String   @map("trip_id")
+  trip   Proyecto @relation(fields: [tripId], references: [id], onDelete: Cascade)
   name   String
   icon   String?
   color  String?
 
-  expenses Expense[]
+  expenses Gasto[]
 
   @@unique([tripId, name])
   @@map("categories")
 }
-
 
 // Gastos
 
@@ -134,18 +143,16 @@ enum ExpenseSource {
   OCR
 }
 
-model Expense {
+model Gasto {
   id          String        @id @default(uuid())
   tripId      String        @map("trip_id")
-  trip        Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  trip        Proyecto      @relation(fields: [tripId], references: [id], onDelete: Cascade)
   description String
   amount      Decimal       @db.Decimal(12, 2)
   categoryId  String?       @map("category_id")
-  category    Category?     @relation(fields: [categoryId], references: [id])
-  paidById    String        @map("paid_by")
-  paidBy      User          @relation("ExpensePayer", fields: [paidById], references: [id])
+  category    Categoria?    @relation(fields: [categoryId], references: [id])
   createdById String        @map("created_by")
-  createdBy   User          @relation("ExpenseCreator", fields: [createdById], references: [id])
+  createdBy   Usuario       @relation("CreadorDelGasto", fields: [createdById], references: [id])
   source      ExpenseSource @default(MANUAL)
   receiptUrl  String?       @map("receipt_url")
   notes       String?
@@ -153,48 +160,61 @@ model Expense {
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  splits ExpenseSplit[]
+  splits DivisionDelGasto[]
+  payers PagadorDelGasto[]
 
   @@map("expenses")
 }
 
 // División del gasto entre integrantes ("¿entre quiénes se divide?")
-model ExpenseSplit {
+model DivisionDelGasto {
   id         String  @id @default(uuid())
   expenseId  String  @map("expense_id")
-  expense    Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  expense    Gasto   @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   userId     String  @map("user_id")
-  user       User    @relation(fields: [userId], references: [id])
+  user       Usuario @relation(fields: [userId], references: [id])
   amountOwed Decimal @map("amount_owed") @db.Decimal(12, 2)
 
   @@unique([expenseId, userId])
   @@map("expense_splits")
 }
 
-// Pagos entre participantes (saldar cuentas)
+// Quién puso el dinero del gasto. Admite varios pagadores; la suma de los
+// aportes debe coincidir con el total, lo que se valida en el servidor.
+model PagadorDelGasto {
+  id        String  @id @default(uuid())
+  expenseId String  @map("expense_id")
+  expense   Gasto   @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  userId    String  @map("user_id")
+  user      Usuario @relation(fields: [userId], references: [id])
+  amount    Decimal @db.Decimal(12, 2)
 
+  @@unique([expenseId, userId])
+  @@map("expense_payers")
+}
+
+// Pagos entre participantes (saldar cuentas)
 
 // Registra que alguien ya le pagó (efectivo, transferencia, etc.) a otro
 // integrante para saldar parte de su deuda. Es la única forma de "resetear"
 // un saldo: el saldo siempre se recalcula a partir de expenses + payments,
 // nunca se guarda de forma redundante.
-model Payment {
-  id          String   @id @default(uuid())
-  tripId      String   @map("trip_id")
-  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  fromUserId  String   @map("from_user_id")
-  fromUser    User     @relation("PaymentSender", fields: [fromUserId], references: [id])
-  toUserId    String   @map("to_user_id")
-  toUser      User     @relation("PaymentReceiver", fields: [toUserId], references: [id])
-  amount      Decimal  @db.Decimal(12, 2)
-  note        String?
-  createdAt   DateTime @default(now()) @map("created_at")
+model Pago {
+  id         String   @id @default(uuid())
+  tripId     String   @map("trip_id")
+  trip       Proyecto @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  fromUserId String   @map("from_user_id")
+  fromUser   Usuario  @relation("QuienPaga", fields: [fromUserId], references: [id])
+  toUserId   String   @map("to_user_id")
+  toUser     Usuario  @relation("QuienCobra", fields: [toUserId], references: [id])
+  amount     Decimal  @db.Decimal(12, 2)
+  note       String?
+  createdAt  DateTime @default(now()) @map("created_at")
 
   @@map("payments")
 }
 
 // Tareas
-
 
 enum TaskStatus {
   PENDING
@@ -206,56 +226,56 @@ enum AssignmentType {
   ROTATING
 }
 
-model Task {
-  id             String         @id @default(uuid())
-  tripId         String         @map("trip_id")
-  trip           Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  title          String
-  description    String?
-  assignmentType AssignmentType @default(MANUAL) @map("assignment_type")
-  assignedToId   String?        @map("assigned_to")
-  assignedTo     User?          @relation("TaskAssignee", fields: [assignedToId], references: [id])
-  rotationGroupId String?       @map("rotation_group_id")
-  rotationGroup  RotationGroup? @relation(fields: [rotationGroupId], references: [id])
+model Tarea {
+  id              String           @id @default(uuid())
+  tripId          String           @map("trip_id")
+  trip            Proyecto         @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  assignmentType  AssignmentType   @default(MANUAL) @map("assignment_type")
+  assignedToId    String?          @map("assigned_to")
+  assignedTo      Usuario?         @relation("ResponsableDeTarea", fields: [assignedToId], references: [id])
+  rotationGroupId String?          @map("rotation_group_id")
+  rotationGroup   GrupoDeRotacion? @relation(fields: [rotationGroupId], references: [id])
   // Modo manual: se pueden fijar startDate y/o dueDate como fechas de referencia.
   // Modo cronómetro (timeTracked): solo importa startDate — el tiempo insumido se
   // calcula al completar la tarea (o cada turno, si es rotativa) y queda guardado
-  // en TaskCompletion.durationSeconds.
-  startDate      DateTime?      @map("start_date")
-  dueDate        DateTime?      @map("due_date")
-  timeTracked    Boolean        @default(false) @map("time_tracked")
-  status         TaskStatus     @default(PENDING)
-  createdById    String         @map("created_by")
-  createdBy      User           @relation("TaskCreator", fields: [createdById], references: [id])
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
+  // en TareaCompletada.durationSeconds.
+  startDate       DateTime?        @map("start_date")
+  dueDate         DateTime?        @map("due_date")
+  timeTracked     Boolean          @default(false) @map("time_tracked")
+  status          TaskStatus       @default(PENDING)
+  createdById     String           @map("created_by")
+  createdBy       Usuario          @relation("CreadorDeTarea", fields: [createdById], references: [id])
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
 
-  completions TaskCompletion[]
+  completions TareaCompletada[]
 
   @@map("tasks")
 }
 
-// Grupo de turnos rotativos 
-model RotationGroup {
-  id       String   @id @default(uuid())
-  tripId   String   @map("trip_id")
-  name     String
+// Grupo de turnos rotativos
+model GrupoDeRotacion {
+  id          String   @id @default(uuid())
+  tripId      String   @map("trip_id")
+  name        String
   memberOrder String[] @map("member_order") // array ordenado de userId
-  cursor   Int      @default(0) // índice del próximo turno
+  cursor      Int      @default(0) // índice del próximo turno
 
-  tasks Task[]
+  tasks Tarea[]
 
   @@map("rotation_groups")
 }
 
-model TaskCompletion {
-  id          String   @id @default(uuid())
-  taskId      String   @map("task_id")
-  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  completedById String @map("completed_by")
-  completedBy User     @relation(fields: [completedById], references: [id])
-  completedAt DateTime @default(now()) @map("completed_at")
-  durationSeconds Int? @map("duration_seconds")
+model TareaCompletada {
+  id              String   @id @default(uuid())
+  taskId          String   @map("task_id")
+  task            Tarea    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  completedById   String   @map("completed_by")
+  completedBy     Usuario  @relation(fields: [completedById], references: [id])
+  completedAt     DateTime @default(now()) @map("completed_at")
+  durationSeconds Int?     @map("duration_seconds")
 
   @@map("task_completions")
 }

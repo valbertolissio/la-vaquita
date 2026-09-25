@@ -5,7 +5,7 @@ build/
 .env.local
 *.log
 .DS_Store
-apps/mobile/.expo/
+.expo/
 apps/api/generated/
 coverage/
 *.tsbuildinfo

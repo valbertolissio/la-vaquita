@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><title>La Vaquita</title>
+<script>
+  const p = new URLSearchParams(location.search);
+  if (p.get("t")) localStorage.setItem("la-vaquita-token", p.get("t"));
+  location.replace(p.get("ir") || "/trips");
+</script>

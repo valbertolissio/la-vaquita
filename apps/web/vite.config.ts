@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  server: { port: 5173 },
+  server: { port: 5173, host: true, allowedHosts: true },
   resolve: {
     // Este es un monorepo con la app mobile en React 19; sin esto, dependencias
     // como react-router (hoisteadas a la raíz por npm) pueden resolver esa versión
